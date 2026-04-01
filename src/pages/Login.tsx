@@ -1,0 +1,43 @@
+import { supabase } from '../supabase';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { LogIn } from 'lucide-react';
+
+export default function Login() {
+  const navigate = useNavigate();
+
+  const handleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[80vh] px-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md p-8 glass-card border border-white/10 rounded-3xl text-center"
+      >
+        <h1 className="text-4xl font-bold mb-4 tracking-tight text-uai-gradient">Welcome to UAi</h1>
+        <p className="text-white/60 mb-8">Connect your Google account to start building your digital AI identity.</p>
+        
+        <button
+          onClick={handleLogin}
+          className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-brand-cyan to-brand-blue-electric text-black font-semibold rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] glow-uai"
+        >
+          <LogIn size={20} />
+          Sign in with Google
+        </button>
+      </motion.div>
+    </div>
+  );
+}

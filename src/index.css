@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-bg: var(--bg-primary);
+  --color-brand-surface: var(--bg-surface);
+  --color-brand-accent: var(--accent-primary);
+  --color-brand-glow: var(--accent-glow);
+  --color-brand-text: var(--text-primary);
+  --color-brand-text-muted: var(--text-muted);
+}
+
+:root {
+  /* Default: Tech AI Blue */
+  --bg-primary: #020617;
+  --bg-surface: rgba(15, 23, 42, 0.7);
+  --accent-primary: #3A86FF;
+  --accent-glow: rgba(0, 198, 255, 0.4);
+  --text-primary: #FFFFFF;
+  --text-muted: #A1A1AA;
+  --font-display: 'Space Grotesk', sans-serif;
+  
+  /* Specific requested colors */
+  --color-uai-1: #00C6FF;
+  --color-uai-2: #3A86FF;
+  --color-uai-3: #1E3A8A;
+  --color-uai-4: #2563EB;
+  --color-secondary-text: #A1A1AA;
+  --color-secondary-highlight: #D4D4D8;
+}
+
+[data-theme='cyber-purple'] {
+  --bg-primary: #050505;
+  --bg-surface: rgba(20, 20, 25, 0.7);
+  --accent-primary: #A855F7;
+  --accent-glow: rgba(168, 85, 247, 0.4);
+}
+
+[data-theme='electric-blue'] {
+  --bg-primary: #020617;
+  --bg-surface: rgba(15, 23, 42, 0.7);
+  --accent-primary: #3A86FF;
+  --accent-glow: rgba(0, 198, 255, 0.4);
+}
+
+[data-theme='gold-glow'] {
+  --bg-primary: #0C0A09;
+  --bg-surface: rgba(28, 25, 23, 0.7);
+  --accent-primary: #F59E0B;
+  --accent-glow: rgba(245, 158, 11, 0.4);
+}
+
+[data-theme='cyber-green'] {
+  --bg-primary: #050505;
+  --bg-surface: rgba(10, 20, 10, 0.7);
+  --accent-primary: #10B981;
+  --accent-glow: rgba(16, 185, 129, 0.4);
+}
+
+@layer base {
+  body {
+    @apply bg-brand-bg text-brand-text antialiased transition-colors duration-500;
+    font-family: 'Inter', sans-serif;
+    background-image: radial-gradient(circle at 50% -20%, var(--accent-glow) 0%, transparent 70%),
+                      radial-gradient(circle at 0% 100%, #000000 0%, transparent 40%);
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .text-uai-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(to right, var(--color-uai-1), var(--color-uai-2), var(--color-uai-3), var(--color-uai-4));
+  }
+
+  .text-neon {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(to right, var(--accent-primary), #FFFFFF);
+  }
+
+  .glow-neon {
+    text-shadow: 0 0 10px var(--accent-glow),
+                 0 0 20px var(--accent-glow);
+  }
+
+  .glow-box-neon {
+    box-shadow: 0 0 20px var(--accent-glow),
+                0 0 40px rgba(0, 0, 0, 0.2);
+  }
+
+  .glass-neon {
+    @apply backdrop-blur-2xl border border-white/10;
+    background: var(--bg-surface);
+  }
+
+  /* Alias used throughout the app */
+  .glass-card {
+    @apply backdrop-blur-xl border border-white/10;
+    background: var(--bg-surface);
+  }
+
+  /* Mode badge pills */
+  .mode-pill {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border;
+  }
+
+  /* NFC product card hover glow */
+  .nfc-card-hover {
+    @apply transition-all duration-300;
+  }
+  .nfc-card-hover:hover {
+    box-shadow: 0 0 30px var(--accent-glow);
+    transform: translateY(-4px);
+  }
+
+  .btn-neon {
+    @apply relative overflow-hidden px-8 py-4 rounded-full font-bold transition-all active:scale-95;
+    background: linear-gradient(135deg, var(--accent-primary), #000);
+    box-shadow: 0 0 15px var(--accent-glow);
+  }
+
+  .btn-neon:hover {
+    box-shadow: 0 0 25px var(--accent-glow);
+    filter: brightness(1.1);
+  }
+}

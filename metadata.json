@@ -1,0 +1,5 @@
+{
+  "name": "UAi - Your Digital AI Twin",
+  "description": "A premium digital identity platform where you can create a high-converting public profile and an AI twin that represents you 24/7.",
+  "requestFramePermissions": ["microphone", "camera"]
+}
