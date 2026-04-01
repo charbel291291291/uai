@@ -8,8 +8,10 @@ import {
   CheckCircle2, AlertCircle, Image as ImageIcon, Video, Wand2,
   Mail, Eye, MessageCircle, ExternalLink, Copy, Reply,
   TrendingUp, Heart, Layers, ShoppingBag, CreditCard, Package,
-  Phone, MessageSquare, Zap, Star, Crown, ChevronRight, Send
+  Phone, Zap, Star, Crown, ChevronRight, Send,
+  Bot, Globe, Flame, Key, Watch, Tag, Info, Lock, Nfc
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -33,53 +35,70 @@ declare global {
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const PROFILE_MODES: { id: ProfileMode; emoji: string; label: string; desc: string; color: string }[] = [
+// ─── Icon Badge ──────────────────────────────────────────────────────────────
+const IconBadge = ({
+  icon: Icon, color, size = 20, cls = 'w-10 h-10 rounded-xl',
+}: { icon: LucideIcon; color: string; size?: number; cls?: string }) => (
+  <div className={`${cls} flex items-center justify-center shrink-0`}
+    style={{ background: `linear-gradient(135deg, ${color}, ${color}99)`, boxShadow: `0 0 18px ${color}35` }}>
+    <Icon size={size} color="#000" strokeWidth={2.2} />
+  </div>
+);
+
+const PROFILE_MODES: { id: ProfileMode; icon: LucideIcon; label: string; desc: string; color: string }[] = [
   {
-    id: 'ai', emoji: '🤖', label: 'AI Mode',
+    id: 'ai', icon: Bot, label: 'AI Mode',
     desc: 'Let an AI twin answer questions 24/7. Best for personal brand & creators.',
-    color: '#3A86FF'
+    color: '#3A86FF',
   },
   {
-    id: 'landing', emoji: '🌐', label: 'Landing Mode',
+    id: 'landing', icon: Globe, label: 'Landing Mode',
     desc: 'Clean hero page with services and links. Fast and minimal.',
-    color: '#10B981'
+    color: '#10B981',
   },
   {
-    id: 'sales', emoji: '💰', label: 'Sales Mode',
+    id: 'sales', icon: TrendingUp, label: 'Sales Mode',
     desc: 'Service offer cards with prices and CTAs. Turn visitors into clients.',
-    color: '#F59E0B'
+    color: '#F59E0B',
   },
 ];
 
-const PLANS = [
+const PLANS: {
+  id: string; name: string; icon: LucideIcon; type: string;
+  price: string; note: string; color: string;
+  features: string[]; cta: string; popular?: boolean;
+}[] = [
   {
-    id: 'basic', name: 'Basic', emoji: '⚡', type: 'One-time',
+    id: 'basic', name: 'Basic', icon: Zap, type: 'One-time',
     price: '$15', note: 'One-time payment',
     color: '#A855F7',
     features: ['Landing Mode Profile', 'Up to 3 Services', 'Custom Links', 'Basic Themes', 'Contact Form'],
-    cta: 'Get Basic', popular: false
+    cta: 'Get Basic', popular: false,
   },
   {
-    id: 'pro', name: 'Pro', emoji: '🔥', type: 'Monthly',
+    id: 'pro', name: 'Pro', icon: Flame, type: 'Monthly',
     price: '$5/mo', note: 'or $50/year',
     color: '#00C6FF',
     features: ['Everything in Basic', 'AI Mode (Chat Twin)', 'Unlimited Services', 'Chat Customization', 'Premium Themes', 'Analytics Dashboard'],
-    cta: 'Go Pro', popular: true
+    cta: 'Go Pro', popular: true,
   },
   {
-    id: 'elite', name: 'Elite', emoji: '👑', type: 'Monthly',
+    id: 'elite', name: 'Elite', icon: Crown, type: 'Monthly',
     price: '$10/mo', note: 'Full power',
     color: '#F59E0B',
     features: ['Everything in Pro', 'Sales Mode', 'Full Gemini AI Integration', 'Advanced Analytics', 'NFC Priority Shipping', 'Priority Support'],
-    cta: 'Go Elite', popular: false
+    cta: 'Go Elite', popular: false,
   },
 ];
 
-const NFC_PRODUCTS = [
-  { type: 'card' as NFCProductType, name: 'NFC Card', emoji: '💳', desc: 'Premium smart business card', price: '$12', note: 'Most Popular' },
-  { type: 'keychain' as NFCProductType, name: 'NFC Keychain', emoji: '🔑', desc: 'Carry your digital profile everywhere', price: '$10', note: '' },
-  { type: 'bracelet' as NFCProductType, name: 'NFC Bracelet', emoji: '⌚', desc: 'Stylish wearable NFC bracelet', price: '$9', note: '' },
-  { type: 'sticker' as NFCProductType, name: 'NFC Sticker', emoji: '⬡', desc: 'Stick it anywhere — laptop, notebook…', price: '$6', note: 'Best Value' },
+const NFC_PRODUCTS: {
+  type: NFCProductType; name: string; icon: LucideIcon;
+  desc: string; price: string; note: string; color: string;
+}[] = [
+  { type: 'card',     name: 'NFC Card',     icon: CreditCard, desc: 'Premium smart business card',         price: '$12', note: 'Most Popular', color: '#3A86FF' },
+  { type: 'keychain', name: 'NFC Keychain', icon: Key,        desc: 'Carry your digital profile everywhere', price: '$10', note: '',           color: '#10B981' },
+  { type: 'bracelet', name: 'NFC Bracelet', icon: Watch,      desc: 'Stylish wearable NFC bracelet',         price: '$9',  note: '',           color: '#A855F7' },
+  { type: 'sticker',  name: 'NFC Sticker',  icon: Tag,        desc: 'Stick it anywhere — laptop, notebook…', price: '$6',  note: 'Best Value', color: '#F59E0B' },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -439,15 +458,18 @@ export default function Dashboard() {
                 {isActive && (
                   <div className="absolute top-3 right-3 w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: mode.color }} />
                 )}
-                <div className="text-2xl mb-2">{mode.emoji}</div>
+                <div className="mb-3">
+                  <IconBadge icon={mode.icon} color={mode.color} size={18} cls="w-9 h-9 rounded-xl" />
+                </div>
                 <div className="font-black text-white text-sm mb-1">{mode.label}</div>
                 <div className="text-xs text-white/40 leading-relaxed">{mode.desc}</div>
               </button>
             );
           })}
         </div>
-        <p className="text-xs text-white/25 mt-4">
-          💡 Mode only affects how visitors see your public profile. Save to apply changes.
+        <p className="text-xs text-white/25 mt-4 flex items-center gap-1.5">
+          <Info size={11} className="shrink-0 opacity-60" />
+          Mode only affects how visitors see your public profile. Save to apply changes.
         </p>
       </div>
 
@@ -908,7 +930,7 @@ export default function Dashboard() {
               {/* Plan Cards */}
               <div>
                 <h3 className="text-2xl font-black tracking-tighter text-white mb-2">Choose Your Plan</h3>
-                <p className="text-sm text-white/35 mb-7">Prices optimized for the Lebanese market. 💙</p>
+                <p className="text-sm text-white/35 mb-7">Prices optimized for the Lebanese market.</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {PLANS.map(plan => (
                     <div key={plan.id}
@@ -926,7 +948,9 @@ export default function Dashboard() {
                         </div>
                       )}
 
-                      <div className="text-3xl mb-3">{plan.emoji}</div>
+                      <div className="mb-4">
+                        <IconBadge icon={plan.icon} color={plan.color} size={20} cls="w-11 h-11 rounded-xl" />
+                      </div>
                       <h4 className="text-xl font-black text-white mb-1">{plan.name}</h4>
                       <div className="mb-1">
                         <span className="text-3xl font-black" style={{ color: plan.color }}>{plan.price}</span>
@@ -983,7 +1007,9 @@ export default function Dashboard() {
                           {product.note}
                         </span>
                       )}
-                      <div className="text-4xl mb-3">{product.emoji}</div>
+                      <div className="flex justify-center mb-4">
+                        <IconBadge icon={product.icon} color={product.color} size={22} cls="w-14 h-14 rounded-2xl" />
+                      </div>
                       <h4 className="font-black text-white text-sm mb-1">{product.name}</h4>
                       <p className="text-xs text-white/40 mb-3 leading-tight">{product.desc}</p>
                       <span className="text-lg font-black" style={{ color: selectedNFC === product.type ? tc : '#ffffff80' }}>
@@ -1000,7 +1026,7 @@ export default function Dashboard() {
                       className="p-8 glass-card border rounded-3xl space-y-5"
                       style={{ borderColor: `${tc}25` }}>
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">{NFC_PRODUCTS.find(p => p.type === selectedNFC)?.emoji}</span>
+                        {(() => { const p = NFC_PRODUCTS.find(x => x.type === selectedNFC); return p ? <IconBadge icon={p.icon} color={p.color} size={18} cls="w-10 h-10 rounded-xl" /> : null; })()}
                         <div>
                           <h4 className="font-black text-white">Order: {NFC_PRODUCTS.find(p => p.type === selectedNFC)?.name}</h4>
                           <p className="text-xs text-white/35">
@@ -1013,7 +1039,7 @@ export default function Dashboard() {
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                           className="p-6 bg-green-500/10 border border-green-500/20 rounded-2xl text-center space-y-2">
                           <CheckCircle2 size={32} className="text-green-400 mx-auto" />
-                          <h4 className="font-black text-white">Order Submitted! 🎉</h4>
+                          <h4 className="font-black text-white">Order Submitted!</h4>
                           <p className="text-sm text-white/50">We'll contact you on WhatsApp/phone to confirm delivery details.</p>
                         </motion.div>
                       ) : (
@@ -1065,10 +1091,11 @@ export default function Dashboard() {
                 </AnimatePresence>
 
                 <div className="mt-6 p-5 bg-white/3 border border-white/8 rounded-2xl">
-                  <p className="text-xs text-white/30 leading-relaxed">
-                    🔒 <strong className="text-white/50">How it works:</strong> After ordering, we program your UAi profile link into the NFC chip.
+                  <p className="text-xs text-white/30 leading-relaxed flex items-start gap-2">
+                    <Lock size={11} className="shrink-0 mt-0.5 opacity-50" />
+                    <span><strong className="text-white/50">How it works:</strong> After ordering, we program your UAi profile link into the NFC chip.
                     Anyone who taps the product with their phone will instantly open your profile.
-                    Delivery within Lebanon. Questions? Message us on WhatsApp.
+                    Delivery within Lebanon. Questions? Message us on WhatsApp.</span>
                   </p>
                 </div>
               </div>
