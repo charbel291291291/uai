@@ -2,58 +2,29 @@ import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import {
   Sparkles, Zap, Shield, Globe, ArrowRight,
-  Bot, TrendingUp, Flame, Crown,
-  CreditCard, Key, Watch, Tag,
-  CheckCircle2, Package, Smartphone, Nfc, Info, Layers
+  CheckCircle2, Package, Layers, Nfc
 } from 'lucide-react';
 import { useAuth } from '../App';
 import { NEON_THEMES } from '../constants';
-import type { LucideIcon } from 'lucide-react';
-
-// ─── Icon Badge Component ─────────────────────────────────────────
-const IconBadge = ({
-  icon: Icon,
-  color,
-  size = 26,
-  badgeSize = 'lg',
-}: {
-  icon: LucideIcon;
-  color: string;
-  size?: number;
-  badgeSize?: 'md' | 'lg' | 'xl';
-}) => {
-  const dims = { md: 'w-12 h-12 rounded-xl', lg: 'w-16 h-16 rounded-2xl', xl: 'w-20 h-20 rounded-3xl' };
-  return (
-    <div
-      className={`${dims[badgeSize]} flex items-center justify-center shrink-0`}
-      style={{
-        background: `linear-gradient(135deg, ${color}, ${color}99)`,
-        boxShadow: `0 0 24px ${color}40`,
-      }}
-    >
-      <Icon size={size} color="#000" strokeWidth={2.2} />
-    </div>
-  );
-};
 
 // ─── Data ─────────────────────────────────────────────────────────
-const MODES: { icon: LucideIcon; label: string; color: string; desc: string; feature: string }[] = [
+const MODES = [
   {
-    icon: Bot,
+    img: '/images/mode-ai.png',
     label: 'AI Mode',
     color: '#3A86FF',
     desc: 'Visitors chat with your AI Twin, powered by Gemini. It answers questions about you 24/7.',
     feature: 'Best for Personal Brand & Creators',
   },
   {
-    icon: Globe,
+    img: '/images/mode-landing.png',
     label: 'Landing Mode',
     color: '#10B981',
     desc: 'A clean, fast page with your services, links, and CTAs. No fluff, just results.',
     feature: 'Best for Professionals & Freelancers',
   },
   {
-    icon: TrendingUp,
+    img: '/images/mode-sales.png',
     label: 'Sales Mode',
     color: '#F59E0B',
     desc: 'Service cards with prices and Order Now buttons. Turn every profile visit into a sale.',
@@ -61,27 +32,26 @@ const MODES: { icon: LucideIcon; label: string; color: string; desc: string; fea
   },
 ];
 
-const PLANS: {
-  name: string; icon: LucideIcon; type: string;
-  price: string; note: string; color: string;
-  features: string[]; cta: string; popular?: boolean;
-}[] = [
+const PLANS = [
   {
-    name: 'Basic', icon: Zap, type: 'One-time',
+    img: '/images/plan-basic.png',
+    name: 'Basic',
     price: '$15', note: 'Pay once, yours forever',
     color: '#A855F7',
     features: ['Landing Mode Profile', 'Up to 3 Services', 'Custom Links', 'Contact Form'],
     cta: 'Get Basic',
   },
   {
-    name: 'Pro', icon: Flame, type: 'Monthly',
+    img: '/images/plan-pro.png',
+    name: 'Pro',
     price: '$5/mo', note: 'or $50/year — save $10',
     color: '#00C6FF',
     features: ['All Basic', 'AI Mode (Chat Twin)', 'Unlimited Services', 'Analytics', 'Premium Themes'],
     cta: 'Go Pro', popular: true,
   },
   {
-    name: 'Elite', icon: Crown, type: 'Monthly',
+    img: '/images/plan-elite.png',
+    name: 'Elite',
     price: '$10/mo', note: 'Full power unlocked',
     color: '#F59E0B',
     features: ['All Pro', 'Sales Mode', 'Full Gemini AI', 'Advanced Analytics', 'NFC Priority'],
@@ -89,11 +59,11 @@ const PLANS: {
   },
 ];
 
-const NFC_ITEMS: { icon: LucideIcon; name: string; price: string; color: string }[] = [
-  { icon: CreditCard, name: 'NFC Card',     price: '$12', color: '#3A86FF' },
-  { icon: Key,        name: 'NFC Keychain', price: '$10', color: '#10B981' },
-  { icon: Watch,      name: 'NFC Bracelet', price: '$9',  color: '#A855F7' },
-  { icon: Tag,        name: 'NFC Sticker',  price: '$6',  color: '#F59E0B' },
+const NFC_ITEMS = [
+  { img: '/images/nfc-card.png',     name: 'NFC Card',     price: '$12', color: '#3A86FF' },
+  { img: '/images/nfc-keychain.png', name: 'NFC Keychain', price: '$10', color: '#10B981' },
+  { img: '/images/nfc-bracelet.png', name: 'NFC Bracelet', price: '$9',  color: '#A855F7' },
+  { img: '/images/nfc-sticker.png',  name: 'NFC Sticker',  price: '$6',  color: '#F59E0B' },
 ];
 
 // ─── Component ─────────────────────────────────────────────────────
@@ -151,10 +121,10 @@ export default function Home() {
       {/* ── FEATURE GRID ──────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-7">
         {[
-          { icon: Zap,      title: 'Instant Setup',    desc: 'Connect your socials and let AI build your persona in seconds.' },
-          { icon: Globe,    title: 'Public Profile',   desc: 'A beautiful page that converts visitors into clients.' },
-          { icon: Shield,   title: 'Secure Identity',  desc: 'Google authentication and Supabase-backed data.' },
-          { icon: Sparkles, title: 'AI Twin',          desc: 'Your AI twin answers questions from your knowledge base, 24/7.' },
+          { icon: Zap,      title: 'Instant Setup',   desc: 'Connect your socials and let AI build your persona in seconds.' },
+          { icon: Globe,    title: 'Public Profile',  desc: 'A beautiful page that converts visitors into clients.' },
+          { icon: Shield,   title: 'Secure Identity', desc: 'Google authentication and Supabase-backed data.' },
+          { icon: Sparkles, title: 'AI Twin',         desc: 'Your AI twin answers questions from your knowledge base, 24/7.' },
         ].map((f, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }} transition={{ delay: i * 0.1 }} whileHover={{ y: -8 }}
@@ -185,18 +155,25 @@ export default function Home() {
           {MODES.map((mode, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ delay: i * 0.12 }} whileHover={{ y: -6 }}
-              className="relative p-8 glass-neon rounded-[36px] overflow-hidden group">
-              <div className="absolute top-0 right-0 w-40 h-40 rounded-full blur-[80px] opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none"
-                style={{ background: mode.color }} />
-              <div className="mb-6">
-                <IconBadge icon={mode.icon} color={mode.color} badgeSize="lg" size={26} />
+              className="relative glass-neon rounded-[36px] overflow-hidden group">
+              {/* Image */}
+              <div className="relative h-52 overflow-hidden">
+                <img
+                  src={mode.img}
+                  alt={mode.label}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60" />
               </div>
-              <h3 className="text-2xl font-black text-white mb-2">{mode.label}</h3>
-              <p className="text-white/45 text-sm leading-relaxed mb-5">{mode.desc}</p>
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-bold border"
-                style={{ color: mode.color, borderColor: `${mode.color}40`, background: `${mode.color}10` }}>
-                {mode.feature}
-              </span>
+              {/* Content */}
+              <div className="p-7">
+                <h3 className="text-2xl font-black text-white mb-2">{mode.label}</h3>
+                <p className="text-white/45 text-sm leading-relaxed mb-5">{mode.desc}</p>
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-bold border"
+                  style={{ color: mode.color, borderColor: `${mode.color}40`, background: `${mode.color}10` }}>
+                  {mode.feature}
+                </span>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -219,34 +196,45 @@ export default function Home() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-10">
           {NFC_ITEMS.map((p, i) => (
             <motion.div key={i} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }} transition={{ delay: i * 0.08 }} whileHover={{ y: -8, scale: 1.02 }}
-              className="relative p-8 glass-neon rounded-[32px] text-center group overflow-hidden cursor-pointer">
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none"
-                style={{ background: p.color }} />
-              <div className="flex justify-center mb-5">
-                <IconBadge icon={p.icon} color={p.color} badgeSize="xl" size={30} />
+              viewport={{ once: true }} transition={{ delay: i * 0.08 }} whileHover={{ y: -8 }}
+              className="glass-neon rounded-[28px] overflow-hidden group cursor-pointer">
+              {/* Product image */}
+              <div className="relative h-44 overflow-hidden bg-white/5">
+                <img
+                  src={p.img}
+                  alt={p.name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               </div>
-              <h3 className="font-black text-white text-base mb-2">{p.name}</h3>
-              <p className="text-2xl font-black" style={{ color: p.color }}>{p.price}</p>
+              <div className="p-5 text-center">
+                <h3 className="font-black text-white text-sm mb-1">{p.name}</h3>
+                <p className="text-xl font-black" style={{ color: p.color }}>{p.price}</p>
+              </div>
             </motion.div>
           ))}
         </div>
 
-        <div className="p-8 md:p-12 glass-neon rounded-[40px] flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
-          <div className="shrink-0">
-            <IconBadge icon={Smartphone} color="#3A86FF" badgeSize="xl" size={32} />
+        {/* How it works */}
+        <div className="p-8 md:p-10 glass-neon rounded-[40px] flex flex-col md:flex-row items-center gap-8">
+          <div className="w-full md:w-64 h-48 rounded-2xl overflow-hidden shrink-0">
+            <img
+              src="/images/nfc-how.png"
+              alt="Tap NFC to open profile"
+              className="w-full h-full object-cover"
+            />
           </div>
-          <div className="flex-1">
-            <h3 className="text-2xl font-black text-white mb-2">How It Works</h3>
-            <p className="text-white/45 leading-relaxed">
+          <div className="flex-1 text-center md:text-left">
+            <h3 className="text-2xl font-black text-white mb-3">How It Works</h3>
+            <p className="text-white/45 leading-relaxed mb-6">
               We program your UAi profile URL into the NFC chip. Tap the product with any smartphone — your full profile opens instantly.
               Available for delivery across <strong className="text-white/70">Lebanon</strong>.
             </p>
+            <Link to="/login"
+              className="btn-neon text-black font-black inline-flex items-center gap-2">
+              Order Now <ArrowRight size={18} />
+            </Link>
           </div>
-          <Link to="/login"
-            className="btn-neon text-black font-black whitespace-nowrap flex items-center gap-2 shrink-0">
-            Order Now <ArrowRight size={18} />
-          </Link>
         </div>
       </motion.section>
 
@@ -268,11 +256,11 @@ export default function Home() {
           {PLANS.map((plan, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ delay: i * 0.12 }}
-              className={`relative flex flex-col p-8 glass-neon rounded-[36px] overflow-hidden ${plan.popular ? 'scale-[1.03]' : ''}`}
+              className={`relative flex flex-col glass-neon rounded-[36px] overflow-hidden ${plan.popular ? 'scale-[1.03]' : ''}`}
               style={plan.popular ? { borderColor: `${plan.color}40`, boxShadow: `0 0 40px ${plan.color}15` } : {}}>
 
               {plan.popular && (
-                <div className="absolute top-5 right-5">
+                <div className="absolute top-4 right-4 z-10">
                   <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest text-black"
                     style={{ background: plan.color }}>
                     Most Popular
@@ -280,29 +268,38 @@ export default function Home() {
                 </div>
               )}
 
-              <div className="mb-5">
-                <IconBadge icon={plan.icon} color={plan.color} badgeSize="lg" size={24} />
+              {/* Plan image */}
+              <div className="relative h-40 overflow-hidden">
+                <img
+                  src={plan.img}
+                  alt={plan.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/70" />
               </div>
-              <h3 className="text-2xl font-black text-white mb-1">{plan.name}</h3>
-              <div className="mb-1">
-                <span className="text-4xl font-black" style={{ color: plan.color }}>{plan.price}</span>
+
+              <div className="p-7 flex flex-col flex-1">
+                <h3 className="text-2xl font-black text-white mb-1">{plan.name}</h3>
+                <div className="mb-1">
+                  <span className="text-4xl font-black" style={{ color: plan.color }}>{plan.price}</span>
+                </div>
+                <p className="text-xs text-white/30 mb-6">{plan.note}</p>
+
+                <ul className="space-y-3 flex-1 mb-8">
+                  {plan.features.map(f => (
+                    <li key={f} className="flex items-center gap-2.5 text-sm text-white/55">
+                      <CheckCircle2 size={14} style={{ color: plan.color }} className="shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <Link to="/login"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm transition-all hover:brightness-110 active:scale-95 text-black"
+                  style={{ background: `linear-gradient(135deg, ${plan.color}, ${plan.color}99)` }}>
+                  {plan.cta} <ArrowRight size={16} />
+                </Link>
               </div>
-              <p className="text-xs text-white/30 mb-6">{plan.note}</p>
-
-              <ul className="space-y-3 flex-1 mb-8">
-                {plan.features.map(f => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-white/55">
-                    <CheckCircle2 size={14} style={{ color: plan.color }} className="shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              <Link to="/login"
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm transition-all hover:brightness-110 active:scale-95"
-                style={{ background: `linear-gradient(135deg, ${plan.color}, ${plan.color}99)`, color: '#000' }}>
-                {plan.cta} <ArrowRight size={16} />
-              </Link>
             </motion.div>
           ))}
         </div>

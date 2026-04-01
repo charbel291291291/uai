@@ -45,45 +45,45 @@ const IconBadge = ({
   </div>
 );
 
-const PROFILE_MODES: { id: ProfileMode; icon: LucideIcon; label: string; desc: string; color: string }[] = [
+const PROFILE_MODES: { id: ProfileMode; icon: LucideIcon; img: string; label: string; desc: string; color: string }[] = [
   {
-    id: 'ai', icon: Bot, label: 'AI Mode',
+    id: 'ai', icon: Bot, img: '/images/mode-ai.png', label: 'AI Mode',
     desc: 'Let an AI twin answer questions 24/7. Best for personal brand & creators.',
     color: '#3A86FF',
   },
   {
-    id: 'landing', icon: Globe, label: 'Landing Mode',
+    id: 'landing', icon: Globe, img: '/images/mode-landing.png', label: 'Landing Mode',
     desc: 'Clean hero page with services and links. Fast and minimal.',
     color: '#10B981',
   },
   {
-    id: 'sales', icon: TrendingUp, label: 'Sales Mode',
+    id: 'sales', icon: TrendingUp, img: '/images/mode-sales.png', label: 'Sales Mode',
     desc: 'Service offer cards with prices and CTAs. Turn visitors into clients.',
     color: '#F59E0B',
   },
 ];
 
 const PLANS: {
-  id: string; name: string; icon: LucideIcon; type: string;
+  id: string; name: string; icon: LucideIcon; img: string; type: string;
   price: string; note: string; color: string;
   features: string[]; cta: string; popular?: boolean;
 }[] = [
   {
-    id: 'basic', name: 'Basic', icon: Zap, type: 'One-time',
+    id: 'basic', name: 'Basic', icon: Zap, img: '/images/plan-basic.png', type: 'One-time',
     price: '$15', note: 'One-time payment',
     color: '#A855F7',
     features: ['Landing Mode Profile', 'Up to 3 Services', 'Custom Links', 'Basic Themes', 'Contact Form'],
     cta: 'Get Basic', popular: false,
   },
   {
-    id: 'pro', name: 'Pro', icon: Flame, type: 'Monthly',
+    id: 'pro', name: 'Pro', icon: Flame, img: '/images/plan-pro.png', type: 'Monthly',
     price: '$5/mo', note: 'or $50/year',
     color: '#00C6FF',
     features: ['Everything in Basic', 'AI Mode (Chat Twin)', 'Unlimited Services', 'Chat Customization', 'Premium Themes', 'Analytics Dashboard'],
     cta: 'Go Pro', popular: true,
   },
   {
-    id: 'elite', name: 'Elite', icon: Crown, type: 'Monthly',
+    id: 'elite', name: 'Elite', icon: Crown, img: '/images/plan-elite.png', type: 'Monthly',
     price: '$10/mo', note: 'Full power',
     color: '#F59E0B',
     features: ['Everything in Pro', 'Sales Mode', 'Full Gemini AI Integration', 'Advanced Analytics', 'NFC Priority Shipping', 'Priority Support'],
@@ -92,13 +92,13 @@ const PLANS: {
 ];
 
 const NFC_PRODUCTS: {
-  type: NFCProductType; name: string; icon: LucideIcon;
+  type: NFCProductType; name: string; icon: LucideIcon; img: string;
   desc: string; price: string; note: string; color: string;
 }[] = [
-  { type: 'card',     name: 'NFC Card',     icon: CreditCard, desc: 'Premium smart business card',         price: '$12', note: 'Most Popular', color: '#3A86FF' },
-  { type: 'keychain', name: 'NFC Keychain', icon: Key,        desc: 'Carry your digital profile everywhere', price: '$10', note: '',           color: '#10B981' },
-  { type: 'bracelet', name: 'NFC Bracelet', icon: Watch,      desc: 'Stylish wearable NFC bracelet',         price: '$9',  note: '',           color: '#A855F7' },
-  { type: 'sticker',  name: 'NFC Sticker',  icon: Tag,        desc: 'Stick it anywhere — laptop, notebook…', price: '$6',  note: 'Best Value', color: '#F59E0B' },
+  { type: 'card',     name: 'NFC Card',     icon: CreditCard, img: '/images/nfc-card.png',     desc: 'Premium smart business card',         price: '$12', note: 'Most Popular', color: '#3A86FF' },
+  { type: 'keychain', name: 'NFC Keychain', icon: Key,        img: '/images/nfc-keychain.png', desc: 'Carry your digital profile everywhere', price: '$10', note: '',           color: '#10B981' },
+  { type: 'bracelet', name: 'NFC Bracelet', icon: Watch,      img: '/images/nfc-bracelet.png', desc: 'Stylish wearable NFC bracelet',         price: '$9',  note: '',           color: '#A855F7' },
+  { type: 'sticker',  name: 'NFC Sticker',  icon: Tag,        img: '/images/nfc-sticker.png',  desc: 'Stick it anywhere — laptop, notebook…', price: '$6',  note: 'Best Value', color: '#F59E0B' },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -459,7 +459,9 @@ export default function Dashboard() {
                   <div className="absolute top-3 right-3 w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: mode.color }} />
                 )}
                 <div className="mb-3">
-                  <IconBadge icon={mode.icon} color={mode.color} size={18} cls="w-9 h-9 rounded-xl" />
+                  <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0">
+                    <img src={mode.img} alt={mode.label} className="w-full h-full object-cover" />
+                  </div>
                 </div>
                 <div className="font-black text-white text-sm mb-1">{mode.label}</div>
                 <div className="text-xs text-white/40 leading-relaxed">{mode.desc}</div>
@@ -949,7 +951,9 @@ export default function Dashboard() {
                       )}
 
                       <div className="mb-4">
-                        <IconBadge icon={plan.icon} color={plan.color} size={20} cls="w-11 h-11 rounded-xl" />
+                        <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0">
+                          <img src={plan.img} alt={plan.name} className="w-full h-full object-cover" />
+                        </div>
                       </div>
                       <h4 className="text-xl font-black text-white mb-1">{plan.name}</h4>
                       <div className="mb-1">
@@ -1008,7 +1012,9 @@ export default function Dashboard() {
                         </span>
                       )}
                       <div className="flex justify-center mb-4">
-                        <IconBadge icon={product.icon} color={product.color} size={22} cls="w-14 h-14 rounded-2xl" />
+                        <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0">
+                          <img src={product.img} alt={product.name} className="w-full h-full object-cover" />
+                        </div>
                       </div>
                       <h4 className="font-black text-white text-sm mb-1">{product.name}</h4>
                       <p className="text-xs text-white/40 mb-3 leading-tight">{product.desc}</p>
@@ -1026,7 +1032,7 @@ export default function Dashboard() {
                       className="p-8 glass-card border rounded-3xl space-y-5"
                       style={{ borderColor: `${tc}25` }}>
                       <div className="flex items-center gap-3">
-                        {(() => { const p = NFC_PRODUCTS.find(x => x.type === selectedNFC); return p ? <IconBadge icon={p.icon} color={p.color} size={18} cls="w-10 h-10 rounded-xl" /> : null; })()}
+                        {(() => { const p = NFC_PRODUCTS.find(x => x.type === selectedNFC); return p ? <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0"><img src={p.img} alt={p.name} className="w-full h-full object-cover" /></div> : null; })()}
                         <div>
                           <h4 className="font-black text-white">Order: {NFC_PRODUCTS.find(p => p.type === selectedNFC)?.name}</h4>
                           <p className="text-xs text-white/35">
