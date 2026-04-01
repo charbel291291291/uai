@@ -1,13 +1,22 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { supabase } from '../supabase';
-import { LogOut, User, LayoutDashboard, Globe } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { LogOut, User, LayoutDashboard, Globe, ChevronRight } from 'lucide-react';
+import { NEON_THEMES } from '../constants';
 import { useLang } from '../hooks/useLang';
 
 export default function Navbar() {
-  const { user, profile } = useAuth();
+  const { user, profile, theme, setTheme } = useAuth();
   const { lang, setLang, t } = useLang();
   const navigate = useNavigate();
+  const [langExpanded, setLangExpanded] = useState(false);
+
+  const cycleTheme = () => {
+    const idx = NEON_THEMES.findIndex(t => t.id === theme);
+    setTheme(NEON_THEMES[(idx + 1) % NEON_THEMES.length].id);
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -17,24 +26,19 @@ export default function Navbar() {
   return (
     <nav className="fixed top-0 inset-x-0 z-50 px-4 sm:px-6 h-16 flex items-center justify-between glass-neon border-b border-white/5">
 
-      {/* ── Logo ─────────────────────────────────────────── */}
-      <Link
-        to="/"
-        className="group shrink-0 cursor-pointer outline-none"
-        aria-label="UAi — Home"
+      {/* ── Logo — click cycles theme ─────────────────────── */}
+      <button
+        onClick={cycleTheme}
+        className="group shrink-0 cursor-pointer outline-none active:scale-95 transition-transform duration-150"
+        aria-label="Switch theme"
+        title="Switch theme"
       >
         <img
           src="/logo.png"
           alt="UAi by eyedeaz"
           width={320}
           height={193}
-          className="
-            h-7 sm:h-9 w-auto
-            object-contain
-            select-none
-            transition-all duration-250 ease-out
-            group-hover:scale-105
-          "
+          className="h-7 sm:h-9 w-auto object-contain select-none transition-all duration-250 ease-out group-hover:scale-105"
           style={{
             filter: 'drop-shadow(0 0 6px rgba(0,198,255,0.35)) drop-shadow(0 0 14px rgba(37,99,235,0.20))',
           }}
@@ -48,21 +52,72 @@ export default function Navbar() {
           }}
           draggable={false}
         />
-      </Link>
+      </button>
 
       {/* ── Right controls ───────────────────────────────── */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
 
-        {/* Language toggle */}
-        <button
-          onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-          className="h-9 px-2.5 rounded-full bg-black/60 border border-white/10 flex items-center gap-1 text-xs font-black tracking-wider hover:bg-white/10 transition-all shrink-0"
-          title="Switch language"
+        {/* ── Foldable language switcher ── */}
+        <motion.div
+          onHoverStart={() => setLangExpanded(true)}
+          onHoverEnd={() => setLangExpanded(false)}
+          onClick={() => setLangExpanded(v => !v)}
+          animate={{ width: langExpanded ? 'auto' : '40px' }}
+          transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+          className="relative flex items-center h-9 bg-black/60 rounded-full border border-white/10 overflow-hidden cursor-pointer shrink-0"
         >
-          <span className={lang === 'en' ? 'text-brand-accent' : 'text-white/30'}>EN</span>
-          <span className="text-white/15">|</span>
-          <span className={lang === 'ar' ? 'text-brand-accent' : 'text-white/30'}>AR</span>
-        </button>
+          <div className="flex items-center px-1">
+            <AnimatePresence mode="popLayout">
+              {langExpanded ? (
+                <motion.div
+                  key="expanded"
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex items-center gap-0.5 px-1"
+                >
+                  {(['en', 'ar'] as const).map((l) => (
+                    <button
+                      key={l}
+                      onClick={e => { e.stopPropagation(); setLang(l); }}
+                      className={`relative w-9 h-7 flex items-center justify-center rounded-full text-xs font-black tracking-wider transition-all duration-200 ${
+                        lang === l ? 'text-black' : 'text-white/40 hover:text-white/70'
+                      }`}
+                    >
+                      {lang === l && (
+                        <motion.div
+                          layoutId="lang-active-pill"
+                          className="absolute inset-0 rounded-full -z-10"
+                          style={{ backgroundColor: 'var(--accent-primary)' }}
+                          transition={{ type: 'spring', bounce: 0.25, duration: 0.5 }}
+                        >
+                          <div className="absolute inset-0 rounded-full blur-md opacity-40"
+                            style={{ backgroundColor: 'var(--accent-primary)' }} />
+                        </motion.div>
+                      )}
+                      {l.toUpperCase()}
+                    </button>
+                  ))}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="collapsed"
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.85 }}
+                  transition={{ duration: 0.12 }}
+                  className="w-9 h-8 flex items-center justify-center gap-0.5"
+                >
+                  <span className="text-xs font-black tracking-wider text-brand-accent">
+                    {lang.toUpperCase()}
+                  </span>
+                  <ChevronRight size={10} className="text-white/30" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
 
         {/* Desktop nav links */}
         <div className="hidden sm:flex items-center gap-2">
@@ -101,8 +156,7 @@ export default function Navbar() {
 
         {/* Mobile login button (only when logged out) */}
         {!user && (
-          <Link to="/login"
-            className="sm:hidden btn-neon text-black text-xs font-bold py-2 px-4">
+          <Link to="/login" className="sm:hidden btn-neon text-black text-xs font-bold py-2 px-4">
             {t('nav.getStarted')}
           </Link>
         )}
