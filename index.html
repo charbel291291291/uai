@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>UAi — Your Digital AI Twin</title>
     <meta name="description" content="Your Digital AI Twin — powered by eyedeaz" />
     <meta name="theme-color" content="#3A86FF" />
@@ -14,23 +14,25 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- Open Graph / Social Preview -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="UAi — Your Digital AI Twin" />
+    <!-- Open Graph / Social -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:title"       content="UAi — Your Digital AI Twin" />
     <meta property="og:description" content="Your Digital AI Twin — powered by eyedeaz" />
-    <meta property="og:image" content="/social/og-image.png" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="/social/og-image.png" />
+    <meta property="og:image"       content="/social/og-image.png" />
+    <meta name="twitter:card"       content="summary_large_image" />
+    <meta name="twitter:image"      content="/social/og-image.png" />
 
-    <!-- iOS Splash -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable"          content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="UAi" />
-    <link rel="apple-touch-startup-image" href="/splash/splash-1242x2688.png" />
+    <meta name="apple-mobile-web-app-title"            content="UAi" />
+    <link rel="apple-touch-startup-image"              href="/splash/splash-1242x2688.png" />
+
+    <!-- Prevent text size adjustment on orientation change -->
+    <meta name="format-detection" content="telephone=no" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
