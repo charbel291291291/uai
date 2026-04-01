@@ -29,18 +29,37 @@ export default function Navbar() {
     <nav className="fixed top-0 inset-x-0 z-50 px-4 sm:px-6 h-16 flex items-center justify-between glass-neon border-b border-white/5">
 
       {/* ── Logo ─────────────────────────────────────────── */}
-      <div
-        onClick={cycleTheme}
-        className="group flex flex-col items-start leading-none cursor-pointer active:scale-95 transition-transform shrink-0"
+      <Link
+        to="/"
+        className="group shrink-0 cursor-pointer outline-none"
+        aria-label="UAi — Home"
       >
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-brand-accent rounded-lg flex items-center justify-center text-black font-black text-xl shadow-[0_0_15px_var(--accent-glow)] transition-all duration-500">
-            U
-          </div>
-          <span className="text-xl sm:text-2xl font-black tracking-tighter text-uai-gradient glow-neon">UAi</span>
-        </div>
-        <span className="text-[9px] font-bold tracking-[0.2em] text-brand-text-muted uppercase ms-10 mt-0.5">by eyedeaz</span>
-      </div>
+        <img
+          src="/logo.png"
+          alt="UAi by eyedeaz"
+          width={320}
+          height={193}
+          className="
+            h-7 sm:h-9 w-auto
+            object-contain
+            select-none
+            transition-all duration-250 ease-out
+            group-hover:scale-105
+          "
+          style={{
+            filter: 'drop-shadow(0 0 6px rgba(0,198,255,0.35)) drop-shadow(0 0 14px rgba(37,99,235,0.20))',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLImageElement).style.filter =
+              'drop-shadow(0 0 8px rgba(0,198,255,0.55)) drop-shadow(0 0 20px rgba(37,99,235,0.30))';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLImageElement).style.filter =
+              'drop-shadow(0 0 6px rgba(0,198,255,0.35)) drop-shadow(0 0 14px rgba(37,99,235,0.20))';
+          }}
+          draggable={false}
+        />
+      </Link>
 
       {/* ── Right controls ───────────────────────────────── */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
