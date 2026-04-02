@@ -29,8 +29,39 @@ export interface NFCOrder {
   phone: string;
   address: string;
   notes?: string;
-  status?: 'pending' | 'processing' | 'shipped' | 'delivered';
+  status?: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  price?: number;
+
+  // Shipping
+  tracking_number?: string;
+  shipping_carrier?: string;
+  shipped_at?: string;
+  delivered_at?: string;
+
+  // Admin
+  admin_notes?: string;
+  updated_by?: string;
+
   created_at?: string;
+  updated_at?: string;
+
+  // Joined data
+  user?: {
+    username: string;
+    display_name: string;
+    avatar_url?: string;
+  };
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'nfc_order_update' | 'payment_approved' | 'payment_rejected' | 'subscription_expiring';
+  title: string;
+  message: string;
+  data: Record<string, any>;
+  read: boolean;
+  created_at: string;
 }
 
 export interface Testimonial {

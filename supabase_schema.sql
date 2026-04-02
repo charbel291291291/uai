@@ -114,8 +114,8 @@ CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
 
 -- ============================================================
--- NFC ORDERS TABLE
--- NFC product orders
+-- NFC ORDERS TABLE (Enhanced)
+-- NFC product orders with shipping tracking
 -- ============================================================
 CREATE TABLE IF NOT EXISTS nfc_orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -127,6 +127,17 @@ CREATE TABLE IF NOT EXISTS nfc_orders (
     notes TEXT,
     status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled')),
     price DECIMAL(10, 2),
+
+    -- Shipping Information
+    tracking_number TEXT,
+    shipping_carrier TEXT,
+    shipped_at TIMESTAMP WITH TIME ZONE,
+    delivered_at TIMESTAMP WITH TIME ZONE,
+
+    -- Admin Management
+    admin_notes TEXT,
+    updated_by UUID REFERENCES auth.users(id),
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -134,6 +145,7 @@ CREATE TABLE IF NOT EXISTS nfc_orders (
 CREATE INDEX IF NOT EXISTS idx_nfc_orders_user_id ON nfc_orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_nfc_orders_status ON nfc_orders(status);
 CREATE INDEX IF NOT EXISTS idx_nfc_orders_created_at ON nfc_orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_nfc_orders_tracking ON nfc_orders(tracking_number);
 
 -- ============================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
@@ -486,6 +498,104 @@ CREATE POLICY "Admins can view all payment proofs"
             WHERE profiles.id = auth.uid() AND profiles.is_admin = true
         )
     );
+
+-- ============================================================
+-- NOTIFICATIONS SYSTEM
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    type TEXT NOT NULL CHECK (type IN ('nfc_order_update', 'payment_approved', 'payment_rejected', 'subscription_expiring')),
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    data JSONB DEFAULT '{}'::jsonb,
+    read BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
+
+-- RLS for Notifications
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own notifications"
+    ON notifications FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own notifications (mark as read)"
+    ON notifications FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "System can create notifications"
+    ON notifications FOR INSERT
+    WITH CHECK (true);
+
+-- Function to create notification on NFC order update
+CREATE OR REPLACE FUNCTION notify_nfc_order_update()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.status IS DISTINCT FROM NEW.status THEN
+        INSERT INTO notifications (user_id, type, title, message, data)
+        VALUES (
+            NEW.user_id,
+            'nfc_order_update',
+            CASE NEW.status
+                WHEN 'processing' THEN 'Order Confirmed'
+                WHEN 'shipped' THEN 'Order Shipped'
+                WHEN 'delivered' THEN 'Order Delivered'
+                ELSE 'Order Updated'
+            END,
+            CASE NEW.status
+                WHEN 'processing' THEN 'Your NFC order is being processed.'
+                WHEN 'shipped' THEN COALESCE('Your order has been shipped! Tracking: ' || NEW.tracking_number, 'Your order has been shipped!')
+                WHEN 'delivered' THEN 'Your order has been delivered. Enjoy!'
+                ELSE 'Your order status has been updated to ' || NEW.status
+            END,
+            jsonb_build_object(
+                'order_id', NEW.id,
+                'status', NEW.status,
+                'tracking_number', NEW.tracking_number,
+                'product_type', NEW.product_type
+            )
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger for NFC order notifications
+CREATE TRIGGER nfc_order_notification_trigger
+    AFTER UPDATE ON nfc_orders
+    FOR EACH ROW
+    EXECUTE FUNCTION notify_nfc_order_update();
+
+-- Function to update NFC order (for admin)
+CREATE OR REPLACE FUNCTION update_nfc_order(
+    order_id UUID,
+    new_status TEXT,
+    tracking_num TEXT DEFAULT NULL,
+    carrier TEXT DEFAULT NULL,
+    admin_note TEXT DEFAULT NULL,
+    admin_id UUID DEFAULT NULL
+)
+RETURNS VOID AS $$
+BEGIN
+    UPDATE nfc_orders
+    SET
+        status = new_status,
+        tracking_number = COALESCE(tracking_num, tracking_number),
+        shipping_carrier = COALESCE(carrier, shipping_carrier),
+        shipped_at = CASE WHEN new_status = 'shipped' THEN NOW() ELSE shipped_at END,
+        delivered_at = CASE WHEN new_status = 'delivered' THEN NOW() ELSE delivered_at END,
+        admin_notes = COALESCE(admin_note, admin_notes),
+        updated_by = admin_id,
+        updated_at = NOW()
+    WHERE id = order_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================================
 -- SAMPLE DATA (Optional - for development)

@@ -9,6 +9,7 @@ import Explore from './pages/Explore';
 import Login from './pages/Login';
 import Upgrade from './pages/Upgrade';
 import Admin from './pages/Admin';
+import AdminNFC from './pages/AdminNFC';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import InstallBanner from './components/InstallBanner';
@@ -78,6 +79,14 @@ function AppShell() {
             element={
               <AuthGate>
                 <Admin />
+              </AuthGate>
+            }
+          />
+          <Route
+            path="/admin/nfc"
+            element={
+              <AuthGate>
+                <AdminNFC />
               </AuthGate>
             }
           />

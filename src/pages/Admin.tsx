@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   Check, X, Clock, ExternalLink, RefreshCw, Loader2,
   Shield, Users, DollarSign, TrendingUp, Search, Filter,
-  Image as ImageIcon, MessageSquare, AlertCircle
+  Image as ImageIcon, MessageSquare, AlertCircle, Package
 } from 'lucide-react';
 import { useAuth } from '../App';
 import { useAdminPayments } from '../hooks/useSubscription';
@@ -108,12 +109,20 @@ export default function Admin() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-black text-white">Admin Dashboard</h1>
-            <p className="text-white/50">Manage payments and subscriptions</p>
+            <p className="text-white/50">Manage payments, subscriptions, and orders</p>
           </div>
-          <Button variant="secondary" onClick={fetchPendingPayments} disabled={loading}>
-            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Link to="/admin/nfc">
+              <Button variant="secondary">
+                <Package size={18} />
+                NFC Orders
+              </Button>
+            </Link>
+            <Button variant="secondary" onClick={fetchPendingPayments} disabled={loading}>
+              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
