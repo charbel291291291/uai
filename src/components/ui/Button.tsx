@@ -10,6 +10,11 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   fullWidth?: boolean;
+  ariaLabel?: string;
+  ariaPressed?: boolean;
+  ariaExpanded?: boolean;
+  ariaControls?: string;
+  ariaDescribedBy?: string;
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
@@ -37,6 +42,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       fullWidth = false,
       className = '',
       disabled,
+      ariaLabel,
+      ariaPressed,
+      ariaExpanded,
+      ariaControls,
+      ariaDescribedBy,
       ...props
     },
     ref
@@ -46,6 +56,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       font-medium transition-all duration-200
       active:scale-[0.98]
       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none
+      focus:outline-none focus:ring-2 focus:ring-[#3A86FF]/50 focus:ring-offset-2 focus:ring-offset-[#020617]
       ${variantStyles[variant]}
       ${sizeStyles[size]}
       ${fullWidth ? 'w-full' : ''}
@@ -57,15 +68,26 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         className={baseClasses}
         disabled={disabled || isLoading}
+        aria-label={ariaLabel}
+        aria-pressed={ariaPressed}
+        aria-expanded={ariaExpanded}
+        aria-controls={ariaControls}
+        aria-describedby={ariaDescribedBy}
         {...props}
       >
         {isLoading ? (
-          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          <>
+            <div 
+              className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" 
+              aria-hidden="true"
+            />
+            <span className="sr-only">Loading...</span>
+          </>
         ) : (
           <>
-            {leftIcon && <span className="flex-shrink-0">{leftIcon}</span>}
+            {leftIcon && <span className="flex-shrink-0" aria-hidden="true">{leftIcon}</span>}
             <span>{children}</span>
-            {rightIcon && <span className="flex-shrink-0">{rightIcon}</span>}
+            {rightIcon && <span className="flex-shrink-0" aria-hidden="true">{rightIcon}</span>}
           </>
         )}
       </button>

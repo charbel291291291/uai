@@ -3,6 +3,7 @@ interface BadgeProps {
   variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'ghost';
   size?: 'sm' | 'md';
   className?: string;
+  ariaLabel?: string;
 }
 
 const variantStyles = {
@@ -19,7 +20,13 @@ const sizeStyles = {
   md: 'px-3 py-1 text-xs',
 };
 
-export function Badge({ children, variant = 'default', size = 'md', className = '' }: BadgeProps) {
+export function Badge({ 
+  children, 
+  variant = 'default', 
+  size = 'md', 
+  className = '',
+  ariaLabel 
+}: BadgeProps) {
   return (
     <span
       className={`
@@ -31,6 +38,8 @@ export function Badge({ children, variant = 'default', size = 'md', className = 
         ${sizeStyles[size]}
         ${className}
       `}
+      aria-label={ariaLabel}
+      role="status"
     >
       {children}
     </span>

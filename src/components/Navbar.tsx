@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { supabase } from '../supabase';
 import { motion, AnimatePresence } from 'motion/react';
-import { LogOut, User, LayoutDashboard, Globe, ChevronRight, Crown, Zap } from 'lucide-react';
+import { LogOut, User, LayoutDashboard, Globe, ChevronRight, Crown, Zap, type LucideProps } from 'lucide-react';
 import { NEON_THEMES } from '../constants';
 import { useLang } from '../hooks/useLang';
 import { useSubscription } from '../hooks/useSubscription';
 import Notifications from './Notifications';
+import type { ComponentType } from 'react';
 
 export default function Navbar() {
   const { user, profile, theme, setTheme } = useAuth();
@@ -17,7 +18,7 @@ export default function Navbar() {
   const { subscription, isExpired } = useSubscription(user?.id);
 
   const currentPlan = subscription?.plan || 'free';
-  const planIcon = currentPlan === 'elite' ? Crown : currentPlan === 'pro' ? Zap : null;
+  const PlanIcon: ComponentType<LucideProps> | null = currentPlan === 'elite' ? Crown : currentPlan === 'pro' ? Zap : null;
 
   const cycleTheme = () => {
     const idx = NEON_THEMES.findIndex(t => t.id === theme);
@@ -35,7 +36,7 @@ export default function Navbar() {
       {/* ── Logo — click cycles theme ─────────────────────── */}
       <button
         onClick={cycleTheme}
-        className="group shrink-0 cursor-pointer outline-none active:scale-95 transition-transform duration-150"
+        className="group shrink-0 cursor-pointer outline-none active:scale-95 transition-all duration-150 px-3 py-2 rounded-full bg-white/10 border border-white/20 hover:bg-white/20"
         aria-label="Switch theme"
         title="Switch theme"
       >
@@ -147,7 +148,7 @@ export default function Navbar() {
               {/* Plan Badge & Upgrade Button */}
               {currentPlan === 'free' ? (
                 <Link to="/upgrade"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-gradient-to-r from-brand-accent to-purple-500 text-black text-sm font-bold hover:opacity-90 transition-opacity">
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white text-black text-sm font-bold hover:opacity-90 transition-opacity">
                   <Crown size={14} />
                   Upgrade
                 </Link>
@@ -160,13 +161,13 @@ export default function Navbar() {
                       ? 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-400 border border-yellow-500/30'
                       : 'bg-gradient-to-r from-brand-accent/20 to-blue-500/20 text-brand-accent border border-brand-accent/30'
                   }`}>
-                  {planIcon && <planIcon size={14} />}
+                  {PlanIcon && <PlanIcon size={14} />}
                   {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
                   {isExpired && ' (Expired)'}
                 </Link>
               )}
               <button onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 transition-colors text-sm font-medium text-red-400/70 hover:text-red-400">
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-medium text-white">
                 <LogOut size={14} />
                 {t('nav.logout')}
               </button>

@@ -229,3 +229,109 @@ export const PAYMENT_METHODS: { id: PaymentMethod; label: string; icon: string; 
     instructions: 'Bank: BDL\nAccount: 1234567890\nIBAN: LB12 1234 5678 9012 3456 7890 1234',
   },
 ];
+
+// ============================================================================
+// ANALYTICS TYPES
+// ============================================================================
+
+export type AnalyticsEventType = 
+  | 'page_view'
+  | 'profile_view'
+  | 'chat_started'
+  | 'message_sent'
+  | 'link_click'
+  | 'cta_click'
+  | 'nfc_tap'
+  | 'service_view'
+  | 'testimonial_view'
+  | 'signup_started'
+  | 'signup_completed'
+  | 'login'
+  | 'logout'
+  | 'order_created'
+  | 'payment_initiated'
+  | 'payment_completed'
+  | 'subscription_started'
+  | 'subscription_expired';
+
+export interface AnalyticsEvent {
+  id: string;
+  event_type: AnalyticsEventType;
+  user_id?: string;
+  profile_id?: string;
+  session_id?: string;
+  visitor_id?: string;
+  data: Record<string, any>;
+  source?: string;
+  medium?: string;
+  campaign?: string;
+  referrer?: string;
+  ip_address?: string;
+  user_agent?: string;
+  country?: string;
+  city?: string;
+  created_at: string;
+  event_timestamp: string;
+}
+
+export interface AnalyticsDailySummary {
+  id: string;
+  profile_id: string;
+  date: string;
+  page_views: number;
+  profile_views: number;
+  chat_starts: number;
+  messages_sent: number;
+  link_clicks: number;
+  cta_clicks: number;
+  nfc_taps: number;
+  unique_visitors: number;
+  details: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// CONTACT MESSAGES TYPES
+// ============================================================================
+
+export type ContactMessageCategory = 
+  | 'general'
+  | 'support'
+  | 'sales'
+  | 'partnership'
+  | 'feedback'
+  | 'bug_report'
+  | 'feature_request';
+
+export type ContactMessageStatus = 
+  | 'new'
+  | 'in_progress'
+  | 'waiting_for_user'
+  | 'resolved'
+  | 'spam'
+  | 'archived';
+
+export type ContactMessagePriority = 'low' | 'normal' | 'high' | 'urgent';
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  category: ContactMessageCategory;
+  user_id?: string;
+  status: ContactMessageStatus;
+  priority: ContactMessagePriority;
+  assigned_to?: string;
+  admin_notes?: string;
+  responded_at?: string;
+  response_count: number;
+  ip_address?: string;
+  user_agent?: string;
+  referrer?: string;
+  created_at: string;
+  updated_at: string;
+}

@@ -1,12 +1,30 @@
+import { useRef, KeyboardEvent } from 'react';
+
 interface CardProps {
   children: React.ReactNode;
   className?: string;
   hover?: boolean;
   onClick?: () => void;
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  ariaLabel?: string;
+  ariaDescribedBy?: string;
+  role?: string;
+  tabIndex?: number;
 }
 
-export function Card({ children, className = '', hover = true, onClick, padding = 'md' }: CardProps) {
+export function Card({ 
+  children, 
+  className = '', 
+  hover = true, 
+  onClick, 
+  padding = 'md',
+  ariaLabel,
+  ariaDescribedBy,
+  role,
+  tabIndex
+}: CardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  
   const paddingClasses = {
     none: '',
     sm: 'p-4',
@@ -14,8 +32,18 @@ export function Card({ children, className = '', hover = true, onClick, padding 
     lg: 'p-8',
   };
 
+  const isClickable = !!onClick;
+  
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (isClickable && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onClick?.();
+    }
+  };
+
   return (
     <div
+      ref={cardRef}
       className={`
         relative overflow-hidden
         bg-[rgba(15,23,42,0.5)] backdrop-blur-xl
@@ -23,12 +51,17 @@ export function Card({ children, className = '', hover = true, onClick, padding 
         rounded-2xl
         transition-transform duration-200 ease-out
         ${hover ? 'hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4),0_0_30px_rgba(58,134,255,0.1)]' : ''}
+        ${isClickable ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#3A86FF]/50 focus:ring-offset-2 focus:ring-offset-[#020617]' : ''}
         ${paddingClasses[padding]}
         ${className}
       `}
       onClick={onClick}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={handleKeyDown}
+      role={role || (isClickable ? 'button' : undefined)}
+      tabIndex={tabIndex !== undefined ? tabIndex : (isClickable ? 0 : undefined)}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedBy}
+      {...(isClickable ? { 'aria-pressed': 'false' } : {})}
     >
       {children}
     </div>
@@ -43,14 +76,30 @@ interface StatCardProps {
     value: number;
     isPositive: boolean;
   };
+  ariaLabel?: string;
 }
 
-export function StatCard({ label, value, icon, trend }: StatCardProps) {
+export function StatCard({ label, value, icon, trend, ariaLabel }: StatCardProps) {
+  const trendDescription = trend 
+    ? `${trend.isPositive ? 'Up' : 'Down'} ${Math.abs(trend.value)}%`
+    : '';
+  
+  const defaultAriaLabel = ariaLabel || `${label}: ${value}${trendDescription ? `, ${trendDescription}` : ''}`;
+
   return (
-    <Card hover={false} padding="md" className="!p-5">
+    <Card 
+      hover={false} 
+      padding="md" 
+      className="!p-5"
+      role="region"
+      aria-label={defaultAriaLabel}
+    >
       <div className="flex items-start justify-between mb-3">
         {icon && (
-          <div className="w-10 h-10 rounded-xl bg-[#3A86FF]/10 border border-[#3A86FF]/20 flex items-center justify-center text-[#3A86FF]">
+          <div 
+            className="w-10 h-10 rounded-xl bg-[#3A86FF]/10 border border-[#3A86FF]/20 flex items-center justify-center text-[#3A86FF]"
+            aria-hidden="true"
+          >
             {icon}
           </div>
         )}
@@ -61,13 +110,14 @@ export function StatCard({ label, value, icon, trend }: StatCardProps) {
                 ? 'bg-green-500/10 text-green-400 border border-green-500/20'
                 : 'bg-red-500/10 text-red-400 border border-red-500/20'
             }`}
+            aria-label={trendDescription}
           >
             {trend.isPositive ? '+' : '-'}{Math.abs(trend.value)}%
           </span>
         )}
       </div>
       <div>
-        <p className="text-2xl font-bold text-white mb-1">{value}</p>
+        <p className="text-2xl font-bold text-white mb-1" aria-label={`Value: ${value}`}>{value}</p>
         <p className="text-xs text-white/40 font-medium uppercase tracking-wide">{label}</p>
       </div>
     </Card>

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   Package, Truck, CheckCircle, Clock, XCircle, RefreshCw,
   Search, Filter, ExternalLink, MessageSquare, Loader2,
   MapPin, Phone, User, Calendar, AlertCircle, ChevronDown,
-  Send
+  Send, ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../App';
 import { useNFCOrdersAdmin } from '../hooks/useNFCOrders';
@@ -12,6 +13,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Input } from '../components/ui/Input';
+import { SEO } from '../components/SEO';
 import type { NFCOrder } from '../types';
 
 const STATUS_CONFIG = {
@@ -116,14 +118,30 @@ export default function AdminNFC() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-black text-white">NFC Orders</h1>
-            <p className="text-white/50">Manage NFC product orders and shipping</p>
-          </div>
+    <>
+      <SEO
+        title="NFC Orders Admin"
+        description="Manage NFC product orders and shipping for UAi digital twin platform."
+        type="website"
+      />
+      <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6">
+        {/* ─── Back Button ── */}
+        <div className="max-w-7xl mx-auto mb-8">
+          <Link to="/dashboard"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/80 hover:text-white hover:bg-white/20 transition-all text-sm font-medium border border-white/10 hover:border-white/20 backdrop-blur-sm"
+            aria-label="Back to dashboard">
+            <ArrowLeft size={16} />
+            Dashboard
+          </Link>
+        </div>
+
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-black text-white">NFC Orders</h1>
+              <p className="text-white/50">Manage NFC product orders and shipping</p>
+            </div>
           <Button variant="secondary" onClick={() => fetchOrders()} disabled={loading}>
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             Refresh
@@ -226,8 +244,8 @@ export default function AdminNFC() {
                             <Badge
                               variant={
                                 order.status === 'delivered' ? 'success' :
-                                order.status === 'cancelled' ? 'danger' :
-                                order.status === 'shipped' ? 'primary' :
+                                order.status === 'cancelled' ? 'error' :
+                                order.status === 'shipped' ? 'info' :
                                 'warning'
                               }
                               size="sm"
@@ -362,8 +380,8 @@ export default function AdminNFC() {
                       <Badge
                         variant={
                           selectedOrder.status === 'delivered' ? 'success' :
-                          selectedOrder.status === 'cancelled' ? 'danger' :
-                          selectedOrder.status === 'shipped' ? 'primary' :
+                          selectedOrder.status === 'cancelled' ? 'error' :
+                          selectedOrder.status === 'shipped' ? 'info' :
                           'warning'
                         }
                       >
@@ -460,5 +478,6 @@ export default function AdminNFC() {
         </div>
       )}
     </div>
+    </>
   );
 }

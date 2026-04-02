@@ -16,6 +16,7 @@ import InstallBanner from './components/InstallBanner';
 import { LangProvider } from './hooks/useLang';
 import { useInstallPrompt } from './hooks/useInstallPrompt';
 import { UserProfile } from './types';
+import { SkipLink, AnnouncerRegions, FocusVisibleStyles } from './components/accessibility';
 
 export type NeonTheme = 'cyber-purple' | 'electric-blue' | 'gold-glow' | 'cyber-green';
 
@@ -44,15 +45,21 @@ function AppShell() {
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text selection:bg-brand-accent/30 transition-colors duration-500">
+      <FocusVisibleStyles />
+      <SkipLink targetId="main-content" />
+      <AnnouncerRegions />
+      
       <Navbar />
 
       {/* Page transition wrapper */}
       <motion.main
+        id="main-content"
         key={location.pathname}
         className="pt-16 pb-20 md:pb-0"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.18, ease: 'easeOut' }}
+        tabIndex={-1}
       >
         <Routes location={location}>
           <Route path="/"          element={<Home />} />

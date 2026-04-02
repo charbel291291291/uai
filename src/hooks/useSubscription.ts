@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabase';
+import { orderService } from '../services';
 import type { Subscription, PaymentRequest, UserPlan } from '../types';
+
+// ============================================================================
+// USE SUBSCRIPTION HOOK
+// ============================================================================
 
 interface UseSubscriptionReturn {
   subscription: Subscription | null;
@@ -13,6 +17,17 @@ interface UseSubscriptionReturn {
   daysRemaining: number | null;
   refetch: () => Promise<void>;
 }
+
+const FEATURE_MAP: Record<string, UserPlan[]> = {
+  'ai-mode': ['pro', 'elite'],
+  'sales-mode': ['elite'],
+  'unlimited-services': ['pro', 'elite'],
+  'analytics': ['pro', 'elite'],
+  'premium-themes': ['pro', 'elite'],
+  'advanced-analytics': ['elite'],
+  'nfc-priority': ['elite'],
+  'custom-domain': ['elite'],
+};
 
 export function useSubscription(userId: string | undefined): UseSubscriptionReturn {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -30,29 +45,38 @@ export function useSubscription(userId: string | undefined): UseSubscriptionRetu
       setLoading(true);
       setError(null);
 
-      // Fetch current subscription
-      const { data: subData, error: subError } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (subError && subError.code !== 'PGRST116') {
-        throw subError;
+      // Fetch payment history using service
+      const { data: payments, error: paymentError } = await orderService.getUserPaymentHistory(userId);
+      
+      if (paymentError) {
+        throw new Error(paymentError.message);
       }
 
-      setSubscription(subData);
+      setPaymentHistory(payments || []);
 
-      // Fetch payment history
-      const { data: paymentData, error: paymentError } = await supabase
-        .from('payment_requests')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      // Derive subscription from most recent approved payment
+      const approvedPayments = (payments || []).filter(p => p.status === 'approved');
+      const mostRecent = approvedPayments[0];
 
-      if (paymentError) throw paymentError;
+      if (mostRecent) {
+        // Calculate expiry (30 days from approval)
+        const approvedAt = new Date(mostRecent.reviewed_at || mostRecent.created_at);
+        const expiresAt = new Date(approvedAt);
+        expiresAt.setDate(expiresAt.getDate() + 30);
 
-      setPaymentHistory(paymentData || []);
+        setSubscription({
+          id: mostRecent.id,
+          user_id: userId,
+          plan: mostRecent.plan,
+          status: new Date() > expiresAt ? 'expired' : 'active',
+          current_period_start: approvedAt.toISOString(),
+          current_period_end: expiresAt.toISOString(),
+          created_at: mostRecent.created_at,
+          updated_at: mostRecent.reviewed_at || mostRecent.created_at,
+        });
+      } else {
+        setSubscription(null);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -64,24 +88,11 @@ export function useSubscription(userId: string | undefined): UseSubscriptionRetu
     fetchSubscription();
   }, [fetchSubscription]);
 
-  // Check if user has a specific feature based on plan
+  // Check if user has a specific feature
   const hasFeature = useCallback((feature: string): boolean => {
     const plan = subscription?.plan || 'free';
-
-    const features: Record<string, UserPlan[]> = {
-      'ai-mode': ['pro', 'elite'],
-      'sales-mode': ['elite'],
-      'unlimited-services': ['pro', 'elite'],
-      'analytics': ['pro', 'elite'],
-      'premium-themes': ['pro', 'elite'],
-      'advanced-analytics': ['elite'],
-      'nfc-priority': ['elite'],
-      'custom-domain': ['elite'],
-    };
-
-    const requiredPlan = features[feature];
-    if (!requiredPlan) return true; // Free feature
-
+    const requiredPlan = FEATURE_MAP[feature];
+    if (!requiredPlan) return true;
     return requiredPlan.includes(plan);
   }, [subscription?.plan]);
 
@@ -91,19 +102,13 @@ export function useSubscription(userId: string | undefined): UseSubscriptionRetu
   }, [subscription?.plan]);
 
   // Check if subscription is expired
-  const isExpired = useCallback((): boolean => {
-    if (!subscription?.expires_at) return false;
-    return new Date(subscription.expires_at) < new Date();
-  }, [subscription?.expires_at]);
+  const isExpired = subscription?.status === 'expired' || 
+    (subscription?.current_period_end ? new Date(subscription.current_period_end) < new Date() : false);
 
   // Calculate days remaining
-  const daysRemaining = useCallback((): number | null => {
-    if (!subscription?.expires_at) return null;
-    const expiry = new Date(subscription.expires_at);
-    const now = new Date();
-    const diff = expiry.getTime() - now.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  }, [subscription?.expires_at])();
+  const daysRemaining = subscription?.current_period_end
+    ? Math.ceil((new Date(subscription.current_period_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
 
   return {
     subscription,
@@ -118,67 +123,78 @@ export function useSubscription(userId: string | undefined): UseSubscriptionRetu
   };
 }
 
-// Hook for creating payment requests
-export function useCreatePaymentRequest() {
+// ============================================================================
+// USE CREATE PAYMENT REQUEST HOOK
+// ============================================================================
+
+interface UseCreatePaymentRequestReturn {
+  createPaymentRequest: (
+    plan: Exclude<UserPlan, 'free'>,
+    paymentMethod: string,
+    proofFile: File
+  ) => Promise<{ success: boolean; data?: PaymentRequest; error?: string }>;
+  loading: boolean;
+  error: string | null;
+}
+
+export function useCreatePaymentRequest(userId: string | undefined): UseCreatePaymentRequestReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const createPaymentRequest = useCallback(async (
-    userId: string,
     plan: Exclude<UserPlan, 'free'>,
     paymentMethod: string,
     proofFile: File
   ): Promise<{ success: boolean; data?: PaymentRequest; error?: string }> => {
+    if (!userId) {
+      return { success: false, error: 'User not authenticated' };
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // Upload proof image
-      const fileName = `${userId}/${Date.now()}_payment_proof.jpg`;
-      const { error: uploadError } = await supabase.storage
-        .from('payment-proofs')
-        .upload(fileName, proofFile);
+      const { data, error: serviceError } = await orderService.createPaymentRequest({
+        userId,
+        plan,
+        paymentMethod,
+        proofFile,
+      });
 
-      if (uploadError) throw uploadError;
+      if (serviceError) {
+        throw new Error(serviceError.message);
+      }
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('payment-proofs')
-        .getPublicUrl(fileName);
-
-      // Create payment request
-      const amount = plan === 'pro' ? 5 : 10;
-
-      const { data, error: insertError } = await supabase
-        .from('payment_requests')
-        .insert({
-          user_id: userId,
-          plan,
-          payment_method: paymentMethod,
-          proof_image_url: publicUrl,
-          amount,
-          currency: 'USD',
-          status: 'pending',
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-
-      return { success: true, data };
+      return { success: true, data: data || undefined };
     } catch (err: any) {
       setError(err.message);
       return { success: false, error: err.message };
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
-  return { createPaymentRequest, loading, error };
+  return {
+    createPaymentRequest,
+    loading,
+    error,
+  };
 }
 
-// Hook for admin to manage payments
-export function useAdminPayments() {
+// ============================================================================
+// USE ADMIN PAYMENTS HOOK
+// ============================================================================
+
+interface UseAdminPaymentsReturn {
+  paymentRequests: PaymentRequest[];
+  loading: boolean;
+  error: string | null;
+  fetchPendingPayments: () => Promise<void>;
+  approvePayment: (paymentId: string, adminNotes?: string) => Promise<boolean>;
+  rejectPayment: (paymentId: string, adminNotes: string) => Promise<boolean>;
+}
+
+export function useAdminPayments(): UseAdminPaymentsReturn {
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -188,16 +204,11 @@ export function useAdminPayments() {
     setError(null);
 
     try {
-      const { data, error } = await supabase
-        .from('payment_requests')
-        .select(`
-          *,
-          user:profiles(username, display_name, avatar_url)
-        `)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+      const { data, error: serviceError } = await orderService.getPendingPayments();
 
-      if (error) throw error;
+      if (serviceError) {
+        throw new Error(serviceError.message);
+      }
 
       setPaymentRequests(data || []);
     } catch (err: any) {
@@ -212,13 +223,14 @@ export function useAdminPayments() {
     adminNotes?: string
   ): Promise<boolean> => {
     try {
-      const { error } = await supabase.rpc('approve_payment_request', {
-        request_id: paymentId,
-        admin_id: (await supabase.auth.getUser()).data.user?.id,
-        notes: adminNotes,
+      const { error: serviceError } = await orderService.approvePayment({
+        paymentId,
+        adminNotes,
       });
 
-      if (error) throw error;
+      if (serviceError) {
+        throw new Error(serviceError.message);
+      }
 
       await fetchPendingPayments();
       return true;
@@ -233,17 +245,11 @@ export function useAdminPayments() {
     adminNotes: string
   ): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('payment_requests')
-        .update({
-          status: 'rejected',
-          reviewed_by: (await supabase.auth.getUser()).data.user?.id,
-          reviewed_at: new Date().toISOString(),
-          admin_notes: adminNotes,
-        })
-        .eq('id', paymentId);
+      const { error: serviceError } = await orderService.rejectPayment(paymentId, adminNotes);
 
-      if (error) throw error;
+      if (serviceError) {
+        throw new Error(serviceError.message);
+      }
 
       await fetchPendingPayments();
       return true;

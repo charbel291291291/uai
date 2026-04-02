@@ -10,11 +10,12 @@ import Markdown from 'react-markdown';
 import {
   Send, Sparkles, Heart, MessageCircle, Phone, Mail,
   ExternalLink, Star, Zap, ArrowRight, CheckCircle2,
-  User as UserIcon, Briefcase, Globe
+  User as UserIcon, Briefcase, Globe, ArrowLeft
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { SEO } from '../components/SEO';
 
 const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || '' });
 
@@ -282,7 +283,24 @@ AI:`;
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen pb-20">
+    <>
+      <SEO
+        title={profile?.displayName || profile?.username || 'Profile'}
+        description={profile?.bio || `Connect with ${profile?.displayName || profile?.username} on UAi - Your Digital AI Twin`}
+        type="profile"
+        image={profile?.avatarUrl || '/og-image.jpg'}
+      />
+      <div className="min-h-screen pb-20">
+      {/* ─── Back Button ── */}
+      <div className="fixed top-6 left-6 z-50">
+        <Link to="/dashboard"
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/80 hover:text-white hover:bg-white/20 transition-all text-sm font-medium border border-white/10 hover:border-white/20 backdrop-blur-sm"
+          aria-label="Back to dashboard">
+          <ArrowLeft size={16} />
+          Dashboard
+        </Link>
+      </div>
+
       {/* ─── Hero Section ────────────────────────────────────────────────────── */}
       <section className="relative pt-24 pb-16 px-6">
         {/* Background glow */}
@@ -703,5 +721,6 @@ AI:`;
         </div>
       </footer>
     </div>
+    </>
   );
 }

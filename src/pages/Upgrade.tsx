@@ -1,15 +1,16 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   Check, Sparkles, Zap, Crown, Wallet, Banknote, Building2,
-  Upload, ArrowRight, Loader2, Clock, Shield, X
+  Upload, ArrowRight, Loader2, Clock, Shield, X, ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../App';
 import { useSubscription, useCreatePaymentRequest } from '../hooks/useSubscription';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { SEO } from '../components/SEO';
 import type { UserPlan, PaymentMethod } from '../types';
 
 const PLANS = [
@@ -79,7 +80,7 @@ export default function Upgrade() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { subscription, paymentHistory, loading: subLoading, refetch } = useSubscription(user?.id);
-  const { createPaymentRequest, loading: creating } = useCreatePaymentRequest();
+  const { createPaymentRequest, loading: creating } = useCreatePaymentRequest(user?.id);
 
   const [selectedPlan, setSelectedPlan] = useState<Exclude<UserPlan, 'free'> | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
@@ -114,7 +115,7 @@ export default function Upgrade() {
     if (!user || !selectedPlan || !selectedMethod || !proofFile) return;
 
     setError(null);
-    const result = await createPaymentRequest(user.id, selectedPlan, selectedMethod, proofFile);
+    const result = await createPaymentRequest(selectedPlan, selectedMethod, proofFile);
 
     if (result.success) {
       setStep('success');
@@ -133,21 +134,37 @@ export default function Upgrade() {
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-neon text-brand-accent text-sm font-bold mb-6"
-          >
-            <Sparkles size={16} />
-            Upgrade Your Experience
-          </motion.div>
+    <>
+      <SEO
+        title="Upgrade"
+        description="Upgrade your UAi experience with Pro and Elite plans. Unlock AI chat, NFC products, and premium features for your digital twin."
+        type="product"
+      />
+      <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6">
+        {/* ─── Back Button ── */}
+        <div className="max-w-6xl mx-auto mb-8">
+          <Link to="/dashboard"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/80 hover:text-white hover:bg-white/20 transition-all text-sm font-medium border border-white/10 hover:border-white/20 backdrop-blur-sm"
+            aria-label="Back to dashboard">
+            <ArrowLeft size={16} />
+            Dashboard
+          </Link>
+        </div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-neon text-brand-accent text-sm font-bold mb-6"
+            >
+              <Sparkles size={16} />
+              Upgrade Your Experience
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="text-4xl sm:text-5xl font-black text-white mb-4"
@@ -239,7 +256,7 @@ export default function Upgrade() {
                 >
                   {plan.popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge variant="primary">Most Popular</Badge>
+                      <Badge variant="default">Most Popular</Badge>
                     </div>
                   )}
 
@@ -555,7 +572,7 @@ export default function Upgrade() {
                     <Badge
                       variant={
                         payment.status === 'approved' ? 'success' :
-                        payment.status === 'rejected' ? 'danger' :
+                        payment.status === 'rejected' ? 'error' :
                         'warning'
                       }
                     >
@@ -569,5 +586,6 @@ export default function Upgrade() {
         )}
       </div>
     </div>
+    </>
   );
 }

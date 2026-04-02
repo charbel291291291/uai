@@ -9,6 +9,7 @@ import { useLang } from '../hooks/useLang';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { i18n } from '../i18n';
 import { NEON_THEMES } from '../constants';
+import { SEO } from '../components/SEO';
 
 // ── Static data (images + colors — labels come from i18n) ─────────────────
 const MODE_META  = [
@@ -44,23 +45,33 @@ export default function Home() {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-16 overflow-x-hidden space-y-20 sm:space-y-28 md:space-y-40">
+    <>
+      <SEO
+        title="UAi - Your Digital AI Twin"
+        description="Create your digital AI twin with UAi. Connect via NFC, manage multiple profiles, and experience the future of digital identity. Free to start."
+        type="website"
+      />
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-16 overflow-x-hidden space-y-20 sm:space-y-28 md:space-y-40">
 
       {/* ── HERO ───────────────────────────────────────────────────────────── */}
-      <section className="text-center relative">
-        {/* Ambient glow */}
+      <section className="text-center relative" aria-labelledby="hero-heading">
+        {/* Ambient glow - decorative */}
         <motion.div
           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
           className="absolute -top-32 left-1/2 -translate-x-1/2 w-[min(600px,100vw)] h-[min(600px,100vw)] bg-brand-glow blur-[120px] rounded-full -z-10 pointer-events-none"
+          aria-hidden="true"
         />
 
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-neon text-brand-accent text-xs sm:text-sm font-bold mb-6 sm:mb-8 shadow-[0_0_15px_var(--accent-glow)]">
-          <Sparkles size={14} /> {tr.badge}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-neon text-brand-accent text-xs sm:text-sm font-bold mb-6 sm:mb-8 shadow-[0_0_15px_var(--accent-glow)]"
+          role="text"
+        >
+          <Sparkles size={14} aria-hidden="true" /> {tr.badge}
         </motion.div>
 
         <motion.h1
+          id="hero-heading"
           initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, type: 'spring', stiffness: 100 }}
           className="text-[clamp(2.8rem,10vw,7rem)] font-black tracking-tighter mb-6 sm:mb-8 leading-[0.9] uppercase"
@@ -77,27 +88,34 @@ export default function Home() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
           className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-5 px-2">
           <Link to="/login"
-            className="btn-neon text-black font-black text-base sm:text-xl flex items-center justify-center gap-2 group">
+            className="btn-neon text-white font-black text-base sm:text-xl flex items-center justify-center gap-2 group"
+            aria-label="Get started with UAi - Create your digital AI twin">
             {tr.ctaStart}
-            <span className="group-hover:translate-x-1 transition-transform rtl:group-hover:-translate-x-1">{Arrow}</span>
+            <span className="group-hover:translate-x-1 transition-transform rtl:group-hover:-translate-x-1" aria-hidden="true">{Arrow}</span>
           </Link>
           <button onClick={cycleTheme}
-            className="px-6 sm:px-10 py-4 sm:py-5 glass-neon text-brand-text font-bold text-base sm:text-xl rounded-full hover:bg-white/10 transition-all active:scale-95 border border-white/10 flex items-center justify-center gap-2">
-            <Sparkles size={16} className="text-brand-accent" /> {tr.ctaTheme}
+            className="px-6 sm:px-10 py-4 sm:py-5 glass-neon text-brand-text font-bold text-base sm:text-xl rounded-full hover:bg-white/10 transition-all active:scale-95 border border-white/10 flex items-center justify-center gap-2"
+            aria-label="Cycle through theme colors">
+            <Sparkles size={16} className="text-brand-accent" aria-hidden="true" /> {tr.ctaTheme}
           </button>
         </motion.div>
       </section>
 
       {/* ── FEATURES ───────────────────────────────────────────────────────── */}
-      <section>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <section aria-labelledby="features-heading">
+        <h2 id="features-heading" className="sr-only">Features</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" role="list">
           {tr.features.map((f, i) => {
             const Icon = FEAT_ICONS[i];
             return (
-              <div key={i}
-                className="p-6 sm:p-9 glass-neon rounded-[28px] sm:rounded-[36px] transition-all duration-200 hover:-translate-y-1.5 group relative overflow-hidden">
-                <div className="absolute top-0 end-0 w-32 h-32 bg-brand-glow blur-[60px] opacity-0 group-hover:opacity-30 transition-opacity duration-200" />
-                <Icon className="text-brand-accent mb-5 sm:mb-7 group-hover:scale-110 transition-transform duration-200" size={32} />
+              <div 
+                key={i}
+                role="listitem"
+                className="p-6 sm:p-9 glass-neon rounded-[28px] sm:rounded-[36px] transition-all duration-200 hover:-translate-y-1.5 group relative overflow-hidden"
+                tabIndex={0}
+              >
+                <div className="absolute top-0 end-0 w-32 h-32 bg-brand-glow blur-[60px] opacity-0 group-hover:opacity-30 transition-opacity duration-200" aria-hidden="true" />
+                <Icon className="text-brand-accent mb-5 sm:mb-7 group-hover:scale-110 transition-transform duration-200" size={32} aria-hidden="true" />
                 <h3 className="text-lg sm:text-xl font-black mb-2 sm:mb-3 text-brand-text tracking-tight">{f.title}</h3>
                 <p className="text-brand-text-muted text-sm leading-relaxed">{f.desc}</p>
               </div>
@@ -295,5 +313,6 @@ export default function Home() {
       </motion.section>
 
     </div>
+    </>
   );
 }

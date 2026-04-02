@@ -2,6 +2,7 @@ import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { LogIn } from 'lucide-react';
+import { SEO } from '../components/SEO';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -21,7 +22,13 @@ export default function Login() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] px-4">
+    <>
+      <SEO
+        title="Login"
+        description="Sign in to UAi with Google to create and manage your digital AI twin. Secure authentication for your digital identity."
+        type="website"
+      />
+      <div className="flex flex-col items-center justify-center min-h-[80vh] px-4">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -32,12 +39,13 @@ export default function Login() {
         
         <button
           onClick={handleLogin}
-          className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-brand-cyan to-brand-blue-electric text-black font-semibold rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] glow-uai"
+          className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-brand-cyan to-brand-blue-electric text-white font-bold text-lg rounded-2xl hover:opacity-90 transition-all active:scale-[0.95] active:shadow-lg glow-uai shadow-[0_10px_30px_rgba(0,198,255,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] hover:shadow-[0_15px_40px_rgba(0,198,255,0.5),inset_0_1px_0_rgba(255,255,255,0.3)] border border-white/20 transform hover:-translate-y-1 duration-200"
         >
           <LogIn size={20} />
           Sign in with Google
         </button>
       </motion.div>
     </div>
+    </>
   );
 }

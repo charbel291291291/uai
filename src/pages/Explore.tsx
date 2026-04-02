@@ -1,38 +1,62 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../supabase';
-import { UserProfile } from '../types';
-import { motion } from 'motion/react';
-import { Search, Sparkles, User as UserIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  Search, 
+  Sparkles, 
+  User as UserIcon, 
+  SlidersHorizontal, 
+  ArrowUpDown,
+  TrendingUp,
+  Clock,
+  Users,
+  X,
+  ChevronDown,
+  ArrowLeft
+} from 'lucide-react';
+import { SEO } from '../components/SEO';
+import { Button } from '../components/ui/Button';
+import { profileService } from '../services';
+import type { UserProfile } from '../types';
+
+type SortOption = 'recent' | 'popular' | 'name';
+type ViewMode = 'grid' | 'list';
+
+interface FilterState {
+  search: string;
+  tags: string[];
+  hasAvatar: boolean | null;
+  hasBio: boolean | null;
+  minKnowledge: number;
+}
 
 export default function Explore() {
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [showFilters, setShowFilters] = useState(false);
+  
+  const [filters, setFilters] = useState<FilterState>({
+    search: '',
+    tags: [],
+    hasAvatar: null,
+    hasBio: null,
+    minKnowledge: 0,
+  });
 
+  // Fetch profiles
   useEffect(() => {
     const fetchProfiles = async () => {
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('is_private', false)
-          .limit(50);
+        setLoading(true);
+        const { data, error } = await profileService.getAllProfiles({ 
+          isPrivate: false,
+          limit: 100 
+        });
 
-        if (error) throw error;
-
-        const fetchedProfiles = (data || []).map(d => ({
-          uid: d.id,
-          username: d.username,
-          displayName: d.display_name,
-          bio: d.bio,
-          avatarUrl: d.avatar_url,
-          qaPairs: d.qa_pairs || [],
-          tags: d.tags || []
-        } as UserProfile));
-
-        setProfiles(fetchedProfiles);
+        if (error) throw new Error(error.message);
+        setProfiles(data || []);
       } catch (err) {
         console.error('Fetch Profiles Error:', err);
       } finally {
@@ -43,135 +67,595 @@ export default function Explore() {
     fetchProfiles();
   }, []);
 
-  const allTags = Array.from(new Set(profiles.flatMap(p => p.tags || []))).sort();
+  // Extract all unique tags
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    profiles.forEach(p => p.tags?.forEach(t => tags.add(t)));
+    return Array.from(tags).sort();
+  }, [profiles]);
 
-  const filteredProfiles = profiles.filter(p => {
-    const matchesSearch = p.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.bio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.tags?.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesTag = !selectedTag || p.tags?.includes(selectedTag);
-    
-    return matchesSearch && matchesTag;
-  });
+  // Filter and sort profiles
+  const filteredProfiles = useMemo(() => {
+    let result = [...profiles];
+
+    // Search filter
+    if (filters.search.trim()) {
+      const search = filters.search.toLowerCase();
+      result = result.filter(p => 
+        p.displayName?.toLowerCase().includes(search) ||
+        p.username?.toLowerCase().includes(search) ||
+        p.bio?.toLowerCase().includes(search) ||
+        p.tags?.some(t => t.toLowerCase().includes(search))
+      );
+    }
+
+    // Tag filters
+    if (filters.tags.length > 0) {
+      result = result.filter(p => 
+        filters.tags.some(tag => p.tags?.includes(tag))
+      );
+    }
+
+    // Has avatar filter
+    if (filters.hasAvatar !== null) {
+      result = result.filter(p => filters.hasAvatar ? !!p.avatarUrl : !p.avatarUrl);
+    }
+
+    // Has bio filter
+    if (filters.hasBio !== null) {
+      result = result.filter(p => filters.hasBio ? !!p.bio?.trim() : !p.bio?.trim());
+    }
+
+    // Min knowledge entries
+    if (filters.minKnowledge > 0) {
+      result = result.filter(p => (p.qaPairs?.length || 0) >= filters.minKnowledge);
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'popular':
+          return (b.analytics?.views || 0) - (a.analytics?.views || 0);
+        case 'name':
+          return (a.displayName || a.username).localeCompare(b.displayName || b.username);
+        case 'recent':
+        default:
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      }
+    });
+
+    return result;
+  }, [profiles, filters, sortBy]);
+
+  // Toggle tag selection
+  const toggleTag = useCallback((tag: string) => {
+    setFilters(prev => ({
+      ...prev,
+      tags: prev.tags.includes(tag) 
+        ? prev.tags.filter(t => t !== tag)
+        : [...prev.tags, tag]
+    }));
+  }, []);
+
+  // Clear all filters
+  const clearFilters = useCallback(() => {
+    setFilters({
+      search: '',
+      tags: [],
+      hasAvatar: null,
+      hasBio: null,
+      minKnowledge: 0,
+    });
+  }, []);
+
+  const activeFiltersCount = filters.tags.length + 
+    (filters.hasAvatar !== null ? 1 : 0) + 
+    (filters.hasBio !== null ? 1 : 0) +
+    (filters.minKnowledge > 0 ? 1 : 0);
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-        <div>
-          <h1 className="text-5xl font-black tracking-tighter text-uai-gradient mb-2">Explore Twins</h1>
-          <p className="text-white/40 text-lg">Discover and chat with AI versions of creators.</p>
+    <>
+      <SEO
+        title="Explore"
+        description="Discover and chat with AI versions of creators. Explore digital twins on UAi."
+        type="website"
+      />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        {/* ─── Back Button ── */}
+        <Link to="/dashboard"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/80 hover:text-white hover:bg-white/20 transition-all text-sm font-medium border border-white/10 hover:border-white/20 backdrop-blur-sm mb-8"
+          aria-label="Back to dashboard">
+          <ArrowLeft size={16} />
+          Dashboard
+        </Link>
+
+        {/* Header */}
+        <div className="mb-8 sm:mb-12">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-uai-gradient mb-3"
+          >
+            Explore Twins
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-white/40 text-lg max-w-xl"
+          >
+            Discover AI-powered digital twins and connect with creators.
+          </motion.p>
         </div>
-        <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-brand-cyan transition-colors" size={20} />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by name, bio, or tag..."
-            className="w-full md:w-80 pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-brand-cyan transition-all glass-card"
-          />
+
+        {/* Search & Controls Bar */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="flex flex-col lg:flex-row gap-4 mb-8"
+        >
+          {/* Search Input */}
+          <div className="relative flex-1 group">
+            <Search 
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-brand-cyan transition-colors" 
+              size={20} 
+            />
+            <input
+              type="text"
+              value={filters.search}
+              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              placeholder="Search by name, bio, or tags..."
+              className="w-full pl-12 pr-4 py-3.5 bg-white/[0.03] border border-white/10 rounded-2xl 
+                         text-white placeholder:text-white/30 
+                         focus:outline-none focus:border-brand-cyan/50 focus:bg-white/[0.05]
+                         transition-all"
+            />
+            {filters.search && (
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, search: '' }))}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
+
+          {/* Controls */}
+          <div className="flex gap-3">
+            {/* Filter Toggle */}
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setShowFilters(!showFilters)}
+              leftIcon={<SlidersHorizontal size={18} />}
+              className="relative"
+            >
+              Filters
+              {activeFiltersCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-brand-cyan text-black text-xs font-bold rounded-full flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </Button>
+
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="appearance-none w-full h-full px-4 pr-10 bg-white/[0.03] border border-white/10 rounded-2xl
+                           text-white text-sm font-medium
+                           focus:outline-none focus:border-brand-cyan/50 focus:bg-white/[0.05]
+                           transition-all cursor-pointer"
+              >
+                <option value="recent" className="bg-[#0f172a]">Most Recent</option>
+                <option value="popular" className="bg-[#0f172a]">Most Popular</option>
+                <option value="name" className="bg-[#0f172a]">Name (A-Z)</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" size={16} />
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="hidden sm:flex bg-white/[0.03] border border-white/10 rounded-2xl p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2.5 rounded-xl transition-all ${
+                  viewMode === 'grid' 
+                    ? 'bg-brand-cyan/20 text-brand-cyan' 
+                    : 'text-white/40 hover:text-white/60'
+                }`}
+                aria-label="Grid view"
+              >
+                <div className="grid grid-cols-2 gap-0.5 w-4 h-4">
+                  <div className="bg-current rounded-sm" />
+                  <div className="bg-current rounded-sm" />
+                  <div className="bg-current rounded-sm" />
+                  <div className="bg-current rounded-sm" />
+                </div>
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2.5 rounded-xl transition-all ${
+                  viewMode === 'list' 
+                    ? 'bg-brand-cyan/20 text-brand-cyan' 
+                    : 'text-white/40 hover:text-white/60'
+                }`}
+                aria-label="List view"
+              >
+                <div className="flex flex-col gap-0.5 w-4 h-4 justify-center">
+                  <div className="h-0.5 bg-current rounded-full" />
+                  <div className="h-0.5 bg-current rounded-full" />
+                  <div className="h-0.5 bg-current rounded-full" />
+                </div>
+              </button>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Filters Panel */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-8"
+            >
+              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl space-y-6">
+                {/* Tags Filter */}
+                {allTags.length > 0 && (
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3 block">
+                      Tags
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {allTags.map(tag => (
+                        <button
+                          key={tag}
+                          onClick={() => toggleTag(tag)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                            filters.tags.includes(tag)
+                              ? 'bg-brand-cyan text-black border-brand-cyan'
+                              : 'bg-white/5 text-white/60 border-white/10 hover:border-white/20'
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Other Filters */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Has Avatar */}
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3 block">
+                      Profile Picture
+                    </label>
+                    <div className="flex gap-2">
+                      {[
+                        { value: null, label: 'Any' },
+                        { value: true, label: 'Yes' },
+                        { value: false, label: 'No' },
+                      ].map(({ value, label }) => (
+                        <button
+                          key={String(value)}
+                          onClick={() => setFilters(prev => ({ ...prev, hasAvatar: value as boolean | null }))}
+                          className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
+                            filters.hasAvatar === value
+                              ? 'bg-brand-cyan/20 text-brand-cyan border-brand-cyan/30'
+                              : 'bg-white/5 text-white/60 border-white/10 hover:border-white/20'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Has Bio */}
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3 block">
+                      Bio
+                    </label>
+                    <div className="flex gap-2">
+                      {[
+                        { value: null, label: 'Any' },
+                        { value: true, label: 'Yes' },
+                        { value: false, label: 'No' },
+                      ].map(({ value, label }) => (
+                        <button
+                          key={String(value)}
+                          onClick={() => setFilters(prev => ({ ...prev, hasBio: value as boolean | null }))}
+                          className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
+                            filters.hasBio === value
+                              ? 'bg-brand-cyan/20 text-brand-cyan border-brand-cyan/30'
+                              : 'bg-white/5 text-white/60 border-white/10 hover:border-white/20'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Knowledge Entries */}
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3 block">
+                      Knowledge Entries
+                    </label>
+                    <select
+                      value={filters.minKnowledge}
+                      onChange={(e) => setFilters(prev => ({ ...prev, minKnowledge: Number(e.target.value) }))}
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm
+                                 focus:outline-none focus:border-brand-cyan/50 transition-all"
+                    >
+                      <option value={0} className="bg-[#0f172a]">Any amount</option>
+                      <option value={5} className="bg-[#0f172a]">5+ entries</option>
+                      <option value={10} className="bg-[#0f172a]">10+ entries</option>
+                      <option value={20} className="bg-[#0f172a]">20+ entries</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Clear Filters */}
+                {activeFiltersCount > 0 && (
+                  <div className="pt-4 border-t border-white/10">
+                    <button
+                      onClick={clearFilters}
+                      className="text-sm text-white/40 hover:text-white/60 transition-colors flex items-center gap-2"
+                    >
+                      <X size={14} />
+                      Clear all filters
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Results Count */}
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-white/40 text-sm">
+            {loading ? (
+              'Loading...'
+            ) : (
+              <>
+                <span className="text-white font-semibold">{filteredProfiles.length}</span>
+                {' '}twins found
+              </>
+            )}
+          </p>
+          
+          {/* Sort indicator */}
+          <div className="flex items-center gap-2 text-white/40 text-sm">
+            <ArrowUpDown size={14} />
+            <span className="capitalize">{sortBy.replace('-', ' ')}</span>
+          </div>
+        </div>
+
+        {/* Profiles Grid/List */}
+        {loading ? (
+          <div className={viewMode === 'grid' 
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            : "space-y-4"
+          }>
+            {[...Array(8)].map((_, i) => (
+              <div 
+                key={i} 
+                className={`bg-white/[0.02] border border-white/5 animate-pulse ${
+                  viewMode === 'grid' ? 'h-72 rounded-3xl' : 'h-24 rounded-2xl'
+                }`} 
+              />
+            ))}
+          </div>
+        ) : (
+          <div className={viewMode === 'grid'
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            : "space-y-4"
+          }>
+            <AnimatePresence mode="popLayout">
+              {filteredProfiles.map((profile, index) => (
+                <motion.div
+                  key={profile.uid}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ delay: index * 0.03 }}
+                >
+                  {viewMode === 'grid' ? (
+                    <ProfileCard profile={profile} />
+                  ) : (
+                    <ProfileListItem profile={profile} />
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && filteredProfiles.length === 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-20"
+          >
+            <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-white/[0.03] border border-white/10 flex items-center justify-center">
+              <Search className="text-white/20" size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">No twins found</h3>
+            <p className="text-white/40 mb-6">Try adjusting your search or filters</p>
+            {activeFiltersCount > 0 && (
+              <Button variant="secondary" onClick={clearFilters}>
+                Clear all filters
+              </Button>
+            )}
+          </motion.div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// Profile Card Component (Grid View)
+function ProfileCard({ profile }: { profile: UserProfile }) {
+  return (
+    <Link
+      to={`/p/${profile.username}`}
+      className="group block h-full p-6 bg-white/[0.02] border border-white/10 rounded-3xl 
+                 hover:border-brand-cyan/30 hover:bg-white/[0.04]
+                 transition-all duration-300"
+    >
+      {/* Avatar */}
+      <div className="relative mb-4">
+        <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 group-hover:border-brand-cyan/30 transition-colors">
+          {profile.avatarUrl ? (
+            <img 
+              src={profile.avatarUrl} 
+              alt={profile.displayName} 
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full bg-white/5 flex items-center justify-center">
+              <UserIcon className="text-white/20" size={32} />
+            </div>
+          )}
+        </div>
+        
+        {/* AI Indicator */}
+        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-brand-cyan rounded-xl flex items-center justify-center shadow-lg shadow-brand-cyan/20">
+          <Sparkles className="text-black" size={14} />
         </div>
       </div>
 
-      {/* Tag Filters */}
-      {allTags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-12">
-          <button
-            onClick={() => setSelectedTag(null)}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
-              !selectedTag 
-                ? 'bg-brand-cyan text-black border-brand-cyan shadow-[0_0_15px_rgba(0,198,255,0.3)]' 
-                : 'bg-white/5 text-white/40 border-white/10 hover:border-white/20'
-            }`}
-          >
-            All
-          </button>
-          {allTags.map(tag => (
-            <button
+      {/* Info */}
+      <div className="space-y-2">
+        <h3 className="font-bold text-white group-hover:text-brand-cyan transition-colors truncate">
+          {profile.displayName}
+        </h3>
+        <p className="text-sm text-white/40 font-mono">@{profile.username}</p>
+        
+        {profile.bio && (
+          <p className="text-sm text-white/50 line-clamp-2 leading-relaxed">
+            {profile.bio}
+          </p>
+        )}
+      </div>
+
+      {/* Tags */}
+      {profile.tags && profile.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-4">
+          {profile.tags.slice(0, 3).map(tag => (
+            <span 
               key={tag}
-              onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
-                selectedTag === tag 
-                  ? 'bg-brand-cyan text-black border-brand-cyan shadow-[0_0_15px_rgba(0,198,255,0.3)]' 
-                  : 'bg-white/5 text-white/40 border-white/10 hover:border-white/20'
-              }`}
+              className="px-2 py-0.5 bg-white/5 rounded-full text-[10px] font-medium text-white/50 uppercase tracking-wider"
             >
               {tag}
-            </button>
+            </span>
           ))}
+          {profile.tags.length > 3 && (
+            <span className="px-2 py-0.5 text-[10px] text-white/30">
+              +{profile.tags.length - 3}
+            </span>
+          )}
         </div>
       )}
 
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="h-64 bg-white/5 rounded-[40px] animate-pulse border border-white/5" />
-          ))}
+      {/* Stats */}
+      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/5">
+        <div className="flex items-center gap-1.5 text-white/30">
+          <TrendingUp size={12} />
+          <span className="text-xs">{profile.analytics?.views || 0}</span>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProfiles.map((profile) => (
-            <div
-              key={profile.uid}
-              className="group relative transition-transform duration-200 hover:-translate-y-1.5"
-            >
-              <Link to={`/p/${profile.username}`} className="block h-full p-8 glass-card border border-white/10 rounded-[40px] hover:border-brand-cyan/30 transition-all overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <Sparkles className="text-brand-cyan" size={20} />
-                </div>
-                
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="w-24 h-24 rounded-3xl overflow-hidden border-2 border-white/10 group-hover:border-brand-cyan/50 transition-colors glow-box">
-                    {profile.avatarUrl ? (
-                      <img src={profile.avatarUrl} alt={profile.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
-                    ) : (
-                      <div className="w-full h-full bg-white/5 flex items-center justify-center text-white/20">
-                        <UserIcon size={40} />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-xl font-black tracking-tight text-white group-hover:text-brand-cyan transition-colors">{profile.displayName}</h3>
-                    <p className="text-sm text-white/40 font-mono">@{profile.username}</p>
-                  </div>
-                  
-                  <p className="text-sm text-white/60 line-clamp-2 leading-relaxed">
-                    {profile.bio || "No bio provided yet."}
-                  </p>
-
-                  <div className="flex flex-wrap justify-center gap-1">
-                    {profile.tags?.slice(0, 3).map(tag => (
-                      <span key={tag} className="px-2 py-0.5 bg-white/5 rounded-full text-[9px] font-bold uppercase tracking-widest text-brand-cyan/60 border border-brand-cyan/10">
-                        {tag}
-                      </span>
-                    ))}
-                    {(profile.tags?.length || 0) > 3 && (
-                      <span className="px-2 py-0.5 bg-white/5 rounded-full text-[9px] font-bold uppercase tracking-widest text-white/20 border border-white/5">
-                        +{(profile.tags?.length || 0) - 3}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="pt-4 flex gap-2">
-                    <span className="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-white/40 border border-white/5">
-                      {profile.qaPairs?.length || 0} Knowledge Entries
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </div>
-          ))}
+        <div className="flex items-center gap-1.5 text-white/30">
+          <Clock size={12} />
+          <span className="text-xs">{profile.qaPairs?.length || 0}</span>
         </div>
-      )}
+      </div>
+    </Link>
+  );
+}
 
-      {!loading && filteredProfiles.length === 0 && (
-        <div className="text-center py-24 glass-card rounded-[40px] border border-white/10">
-          <p className="text-white/40 text-xl">No twins found matching your search.</p>
+// Profile List Item Component (List View)
+function ProfileListItem({ profile }: { profile: UserProfile }) {
+  return (
+    <Link
+      to={`/p/${profile.username}`}
+      className="group flex items-center gap-4 p-4 bg-white/[0.02] border border-white/10 rounded-2xl 
+                 hover:border-brand-cyan/30 hover:bg-white/[0.04]
+                 transition-all duration-300"
+    >
+      {/* Avatar */}
+      <div className="w-16 h-16 rounded-xl overflow-hidden border border-white/10 group-hover:border-brand-cyan/30 transition-colors flex-shrink-0">
+        {profile.avatarUrl ? (
+          <img 
+            src={profile.avatarUrl} 
+            alt={profile.displayName} 
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full bg-white/5 flex items-center justify-center">
+            <UserIcon className="text-white/20" size={24} />
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-3 mb-1">
+          <h3 className="font-bold text-white group-hover:text-brand-cyan transition-colors truncate">
+            {profile.displayName}
+          </h3>
+          <span className="text-sm text-white/30 font-mono">@{profile.username}</span>
         </div>
-      )}
-    </div>
+        
+        {profile.bio && (
+          <p className="text-sm text-white/50 truncate">
+            {profile.bio}
+          </p>
+        )}
+
+        {/* Tags */}
+        {profile.tags && profile.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {profile.tags.slice(0, 4).map(tag => (
+              <span 
+                key={tag}
+                className="px-2 py-0.5 bg-white/5 rounded-full text-[10px] font-medium text-white/40"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div className="hidden sm:flex items-center gap-6 text-white/30">
+        <div className="flex items-center gap-1.5">
+          <TrendingUp size={14} />
+          <span className="text-sm">{profile.analytics?.views || 0}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Users size={14} />
+          <span className="text-sm">{profile.qaPairs?.length || 0}</span>
+        </div>
+      </div>
+
+      {/* Arrow */}
+      <div className="text-white/20 group-hover:text-brand-cyan transition-colors">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      </div>
+    </Link>
   );
 }

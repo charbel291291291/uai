@@ -1,0 +1,48 @@
+# robots.txt for UAi - Your Digital AI Twin
+# https://uai.app
+
+User-agent: *
+Allow: /
+
+# Allow all main pages
+Allow: /dashboard
+Allow: /explore
+Allow: /login
+Allow: /upgrade
+Allow: /admin
+Allow: /admin/nfc
+
+# Allow profile pages
+Allow: /p/
+Allow: /*?username=*
+
+# Sitemap location
+Sitemap: https://uai.app/sitemap.xml
+
+# Crawl-delay for polite crawling (optional)
+Crawl-delay: 1
+
+# Block admin areas from public indexing (optional - uncomment if needed)
+# User-agent: *
+# Disallow: /admin/
+# Disallow: /admin/nfc
+
+# Google-specific optimizations
+User-agent: Googlebot
+Allow: /
+Sitemap: https://uai.app/sitemap.xml
+
+# Bing-specific optimizations
+User-agent: Bingbot
+Allow: /
+Sitemap: https://uai.app/sitemap.xml
+
+# Yandex
+User-agent: Yandex
+Allow: /
+Sitemap: https://uai.app/sitemap.xml
+
+# Baidu
+User-agent: Baiduspider
+Allow: /
+Sitemap: https://uai.app/sitemap.xml
