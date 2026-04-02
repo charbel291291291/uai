@@ -7,10 +7,9 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================================
--- STEP 1: CREATE ALL TABLES FIRST (without triggers)
+-- STEP 1: CREATE ALL TABLES
 -- ============================================================
 
--- Profiles table
 CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     username TEXT UNIQUE NOT NULL,
@@ -40,7 +39,6 @@ CREATE TABLE IF NOT EXISTS profiles (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Likes table
 CREATE TABLE IF NOT EXISTS likes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -49,7 +47,6 @@ CREATE TABLE IF NOT EXISTS likes (
     UNIQUE(user_id, profile_id)
 );
 
--- Messages table
 CREATE TABLE IF NOT EXISTS messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     profile_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -61,7 +58,6 @@ CREATE TABLE IF NOT EXISTS messages (
     read BOOLEAN DEFAULT false
 );
 
--- Leads table
 CREATE TABLE IF NOT EXISTS leads (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     profile_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -74,7 +70,6 @@ CREATE TABLE IF NOT EXISTS leads (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- NFC Orders table
 CREATE TABLE IF NOT EXISTS nfc_orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -95,7 +90,6 @@ CREATE TABLE IF NOT EXISTS nfc_orders (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Payment Requests table
 CREATE TABLE IF NOT EXISTS payment_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -111,7 +105,6 @@ CREATE TABLE IF NOT EXISTS payment_requests (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Subscriptions table
 CREATE TABLE IF NOT EXISTS subscriptions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -126,7 +119,6 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     UNIQUE(user_id)
 );
 
--- Notifications table
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -138,7 +130,6 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- AI Conversations table
 CREATE TABLE IF NOT EXISTS ai_conversations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     profile_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -151,48 +142,24 @@ CREATE TABLE IF NOT EXISTS ai_conversations (
 );
 
 -- ============================================================
--- STEP 2: CREATE INDEXES
+-- STEP 2: INDEXES
 -- ============================================================
 
 CREATE INDEX IF NOT EXISTS idx_profiles_username ON profiles(username);
 CREATE INDEX IF NOT EXISTS idx_profiles_mode ON profiles(mode);
 CREATE INDEX IF NOT EXISTS idx_profiles_plan ON profiles(plan);
-CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON profiles(created_at);
-
 CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id);
-CREATE INDEX IF NOT EXISTS idx_likes_profile_id ON likes(profile_id);
-
 CREATE INDEX IF NOT EXISTS idx_messages_profile_id ON messages(profile_id);
-CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_leads_profile_id ON leads(profile_id);
-CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
-
 CREATE INDEX IF NOT EXISTS idx_nfc_orders_user_id ON nfc_orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_nfc_orders_status ON nfc_orders(status);
-CREATE INDEX IF NOT EXISTS idx_nfc_orders_created_at ON nfc_orders(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_nfc_orders_tracking ON nfc_orders(tracking_number);
-
 CREATE INDEX IF NOT EXISTS idx_payment_requests_user_id ON payment_requests(user_id);
-CREATE INDEX IF NOT EXISTS idx_payment_requests_status ON payment_requests(status);
-CREATE INDEX IF NOT EXISTS idx_payment_requests_created_at ON payment_requests(created_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_expires_at ON subscriptions(expires_at);
-
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
-CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_ai_conversations_profile_id ON ai_conversations(profile_id);
-CREATE INDEX IF NOT EXISTS idx_ai_conversations_visitor_id ON ai_conversations(visitor_id);
-CREATE INDEX IF NOT EXISTS idx_ai_conversations_status ON ai_conversations(status);
-CREATE INDEX IF NOT EXISTS idx_ai_conversations_last_message_at ON ai_conversations(last_message_at DESC);
 
 -- ============================================================
--- STEP 3: ENABLE RLS
+-- STEP 3: RLS ENABLE
 -- ============================================================
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -206,166 +173,54 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_conversations ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
--- STEP 4: CREATE RLS POLICIES
+-- STEP 4: RLS POLICIES
 -- ============================================================
 
--- Profiles
-CREATE POLICY "Public profiles are viewable by everyone"
-    ON profiles FOR SELECT
-    USING (NOT is_private OR auth.uid() = id);
+CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT USING (NOT is_private OR auth.uid() = id);
+CREATE POLICY "Users can insert their own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can delete own profile" ON profiles FOR DELETE USING (auth.uid() = id);
 
-CREATE POLICY "Users can insert their own profile"
-    ON profiles FOR INSERT
-    WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can view their own likes" ON likes FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create likes" ON likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own likes" ON likes FOR DELETE USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can update own profile"
-    ON profiles FOR UPDATE
-    USING (auth.uid() = id);
+CREATE POLICY "Profile owners can view their messages" ON messages FOR SELECT USING (auth.uid() = profile_id);
+CREATE POLICY "Anyone can send messages" ON messages FOR INSERT WITH CHECK (true);
+CREATE POLICY "Profile owners can delete their messages" ON messages FOR DELETE USING (auth.uid() = profile_id);
 
-CREATE POLICY "Users can delete own profile"
-    ON profiles FOR DELETE
-    USING (auth.uid() = id);
+CREATE POLICY "Profile owners can view their leads" ON leads FOR SELECT USING (auth.uid() = profile_id);
+CREATE POLICY "Anyone can create leads" ON leads FOR INSERT WITH CHECK (true);
+CREATE POLICY "Profile owners can update their leads" ON leads FOR UPDATE USING (auth.uid() = profile_id);
+CREATE POLICY "Profile owners can delete their leads" ON leads FOR DELETE USING (auth.uid() = profile_id);
 
--- Likes
-CREATE POLICY "Users can view their own likes"
-    ON likes FOR SELECT
-    USING (auth.uid() = user_id);
+CREATE POLICY "Users can view their own orders" ON nfc_orders FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create their own orders" ON nfc_orders FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own pending orders" ON nfc_orders FOR UPDATE USING (auth.uid() = user_id AND status = 'pending');
+CREATE POLICY "Admins can view all orders" ON nfc_orders FOR SELECT USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true));
+CREATE POLICY "Admins can update all orders" ON nfc_orders FOR UPDATE USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true));
 
-CREATE POLICY "Users can create likes"
-    ON likes FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view their own payment requests" ON payment_requests FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create payment requests" ON payment_requests FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Admins can view all payment requests" ON payment_requests FOR SELECT USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true));
+CREATE POLICY "Admins can update payment requests" ON payment_requests FOR UPDATE USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true));
 
-CREATE POLICY "Users can delete their own likes"
-    ON likes FOR DELETE
-    USING (auth.uid() = user_id);
+CREATE POLICY "Users can view their own subscription" ON subscriptions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Admins can manage all subscriptions" ON subscriptions FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true));
 
--- Messages
-CREATE POLICY "Profile owners can view their messages"
-    ON messages FOR SELECT
-    USING (auth.uid() = profile_id);
+CREATE POLICY "Users can view their own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update their own notifications" ON notifications FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own notifications" ON notifications FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "System can create notifications" ON notifications FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Anyone can send messages"
-    ON messages FOR INSERT
-    WITH CHECK (true);
-
-CREATE POLICY "Profile owners can delete their messages"
-    ON messages FOR DELETE
-    USING (auth.uid() = profile_id);
-
--- Leads
-CREATE POLICY "Profile owners can view their leads"
-    ON leads FOR SELECT
-    USING (auth.uid() = profile_id);
-
-CREATE POLICY "Anyone can create leads"
-    ON leads FOR INSERT
-    WITH CHECK (true);
-
-CREATE POLICY "Profile owners can update their leads"
-    ON leads FOR UPDATE
-    USING (auth.uid() = profile_id);
-
-CREATE POLICY "Profile owners can delete their leads"
-    ON leads FOR DELETE
-    USING (auth.uid() = profile_id);
-
--- NFC Orders
-CREATE POLICY "Users can view their own orders"
-    ON nfc_orders FOR SELECT
-    USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can create their own orders"
-    ON nfc_orders FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own pending orders"
-    ON nfc_orders FOR UPDATE
-    USING (auth.uid() = user_id AND status = 'pending');
-
-CREATE POLICY "Admins can view all orders"
-    ON nfc_orders FOR SELECT
-    USING (EXISTS (
-        SELECT 1 FROM profiles
-        WHERE profiles.id = auth.uid() AND profiles.is_admin = true
-    ));
-
-CREATE POLICY "Admins can update all orders"
-    ON nfc_orders FOR UPDATE
-    USING (EXISTS (
-        SELECT 1 FROM profiles
-        WHERE profiles.id = auth.uid() AND profiles.is_admin = true
-    ));
-
--- Payment Requests
-CREATE POLICY "Users can view their own payment requests"
-    ON payment_requests FOR SELECT
-    USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can create payment requests"
-    ON payment_requests FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Admins can view all payment requests"
-    ON payment_requests FOR SELECT
-    USING (EXISTS (
-        SELECT 1 FROM profiles
-        WHERE profiles.id = auth.uid() AND profiles.is_admin = true
-    ));
-
-CREATE POLICY "Admins can update payment requests"
-    ON payment_requests FOR UPDATE
-    USING (EXISTS (
-        SELECT 1 FROM profiles
-        WHERE profiles.id = auth.uid() AND profiles.is_admin = true
-    ));
-
--- Subscriptions
-CREATE POLICY "Users can view their own subscription"
-    ON subscriptions FOR SELECT
-    USING (auth.uid() = user_id);
-
-CREATE POLICY "Admins can manage all subscriptions"
-    ON subscriptions FOR ALL
-    USING (EXISTS (
-        SELECT 1 FROM profiles
-        WHERE profiles.id = auth.uid() AND profiles.is_admin = true
-    ));
-
--- Notifications
-CREATE POLICY "Users can view their own notifications"
-    ON notifications FOR SELECT
-    USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own notifications"
-    ON notifications FOR UPDATE
-    USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own notifications"
-    ON notifications FOR DELETE
-    USING (auth.uid() = user_id);
-
-CREATE POLICY "System can create notifications"
-    ON notifications FOR INSERT
-    WITH CHECK (true);
-
--- AI Conversations
-CREATE POLICY "Profile owners can view their conversations"
-    ON ai_conversations FOR SELECT
-    USING (auth.uid() = profile_id);
-
-CREATE POLICY "Anyone can create conversations"
-    ON ai_conversations FOR INSERT
-    WITH CHECK (true);
-
-CREATE POLICY "Anyone can update active conversations"
-    ON ai_conversations FOR UPDATE
-    USING (status = 'active');
+CREATE POLICY "Profile owners can view their conversations" ON ai_conversations FOR SELECT USING (auth.uid() = profile_id);
+CREATE POLICY "Anyone can create conversations" ON ai_conversations FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can update active conversations" ON ai_conversations FOR UPDATE USING (status = 'active');
 
 -- ============================================================
--- STEP 5: CREATE FUNCTIONS (without triggers first)
+-- STEP 5: BASIC FUNCTIONS (no column references)
 -- ============================================================
 
--- Update updated_at function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -374,95 +229,56 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Increment analytics function
-CREATE OR REPLACE FUNCTION increment_profile_analytics(
-    profile_uuid UUID,
-    field TEXT
-)
+CREATE OR REPLACE FUNCTION increment_profile_analytics(profile_uuid UUID, field TEXT)
 RETURNS VOID AS $$
 BEGIN
-    UPDATE profiles
-    SET analytics = jsonb_set(
-        analytics,
-        ARRAY[field],
-        COALESCE(analytics->field, '0')::int + 1
-    )
-    WHERE id = profile_uuid;
+    UPDATE profiles SET analytics = jsonb_set(analytics, ARRAY[field], COALESCE(analytics->field, '0')::int + 1) WHERE id = profile_uuid;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Approve payment request function
-CREATE OR REPLACE FUNCTION approve_payment_request(
-    request_id UUID,
-    admin_id UUID,
-    notes TEXT DEFAULT NULL
-)
+-- ============================================================
+-- STEP 6: BASIC TRIGGERS (only updated_at)
+-- ============================================================
+
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_leads_updated_at BEFORE UPDATE ON leads FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_nfc_orders_updated_at BEFORE UPDATE ON nfc_orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_subscriptions_updated_at BEFORE UPDATE ON subscriptions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================================
+-- STEP 7: ADMIN FUNCTIONS
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION approve_payment_request(request_id UUID, admin_id UUID, notes TEXT DEFAULT NULL)
 RETURNS VOID AS $$
 DECLARE
     v_user_id UUID;
     v_plan TEXT;
 BEGIN
-    SELECT user_id, plan INTO v_user_id, v_plan
-    FROM payment_requests
-    WHERE id = request_id AND status = 'pending';
-
+    SELECT user_id, plan INTO v_user_id, v_plan FROM payment_requests WHERE id = request_id AND status = 'pending';
     IF v_user_id IS NULL THEN
         RAISE EXCEPTION 'Payment request not found or already processed';
     END IF;
-
-    UPDATE payment_requests
-    SET status = 'approved',
-        reviewed_by = admin_id,
-        reviewed_at = NOW(),
-        admin_notes = notes
-    WHERE id = request_id;
-
+    UPDATE payment_requests SET status = 'approved', reviewed_by = admin_id, reviewed_at = NOW(), admin_notes = notes WHERE id = request_id;
     INSERT INTO subscriptions (user_id, plan, status, expires_at, payment_request_id)
     VALUES (v_user_id, v_plan, 'active', NOW() + INTERVAL '30 days', request_id)
-    ON CONFLICT (user_id)
-    DO UPDATE SET
-        plan = v_plan,
-        status = 'active',
-        expires_at = NOW() + INTERVAL '30 days',
-        payment_request_id = request_id,
-        updated_at = NOW();
-
-    UPDATE profiles
-    SET plan = v_plan
-    WHERE id = v_user_id;
+    ON CONFLICT (user_id) DO UPDATE SET plan = v_plan, status = 'active', expires_at = NOW() + INTERVAL '30 days', payment_request_id = request_id, updated_at = NOW();
+    UPDATE profiles SET plan = v_plan WHERE id = v_user_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Check expired subscriptions function
 CREATE OR REPLACE FUNCTION check_expired_subscriptions()
 RETURNS VOID AS $$
 BEGIN
-    UPDATE subscriptions
-    SET status = 'expired'
-    WHERE status = 'active' AND expires_at < NOW();
-
-    UPDATE profiles
-    SET plan = 'free'
-    WHERE id IN (
-        SELECT user_id FROM subscriptions
-        WHERE status = 'expired' AND plan != 'free'
-    );
+    UPDATE subscriptions SET status = 'expired' WHERE status = 'active' AND expires_at < NOW();
+    UPDATE profiles SET plan = 'free' WHERE id IN (SELECT user_id FROM subscriptions WHERE status = 'expired' AND plan != 'free');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Update NFC order function
-CREATE OR REPLACE FUNCTION update_nfc_order(
-    order_id UUID,
-    new_status TEXT,
-    tracking_num TEXT DEFAULT NULL,
-    carrier TEXT DEFAULT NULL,
-    admin_note TEXT DEFAULT NULL,
-    admin_id UUID DEFAULT NULL
-)
+CREATE OR REPLACE FUNCTION update_nfc_order(order_id UUID, new_status TEXT, tracking_num TEXT DEFAULT NULL, carrier TEXT DEFAULT NULL, admin_note TEXT DEFAULT NULL, admin_id UUID DEFAULT NULL)
 RETURNS VOID AS $$
 BEGIN
-    UPDATE nfc_orders
-    SET
+    UPDATE nfc_orders SET
         status = new_status,
         tracking_number = COALESCE(tracking_num, tracking_number),
         shipping_carrier = COALESCE(carrier, shipping_carrier),
@@ -475,172 +291,134 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- NFC order notification function
+-- ============================================================
+-- STEP 8: NOTIFICATION FUNCTIONS (separate to avoid trigger issues)
+-- ============================================================
+
 CREATE OR REPLACE FUNCTION notify_nfc_order_update()
 RETURNS TRIGGER AS $$
+DECLARE
+    old_status TEXT;
+    new_status TEXT;
+    user_uuid UUID;
+    tracking TEXT;
+    product TEXT;
+    order_uuid UUID;
 BEGIN
-    IF OLD.status IS DISTINCT FROM NEW.status THEN
+    old_status := OLD.status;
+    new_status := NEW.status;
+    user_uuid := NEW.user_id;
+    tracking := NEW.tracking_number;
+    product := NEW.product_type;
+    order_uuid := NEW.id;
+    
+    IF old_status IS DISTINCT FROM new_status THEN
         INSERT INTO notifications (user_id, type, title, message, data)
         VALUES (
-            NEW.user_id,
+            user_uuid,
             'nfc_order_update',
-            CASE NEW.status
+            CASE new_status
                 WHEN 'processing' THEN 'Order Confirmed'
                 WHEN 'shipped' THEN 'Order Shipped'
                 WHEN 'delivered' THEN 'Order Delivered'
                 ELSE 'Order Updated'
             END,
-            CASE NEW.status
+            CASE new_status
                 WHEN 'processing' THEN 'Your NFC order is being processed.'
-                WHEN 'shipped' THEN COALESCE('Your order has been shipped! Tracking: ' || NEW.tracking_number, 'Your order has been shipped!')
+                WHEN 'shipped' THEN COALESCE('Your order has been shipped! Tracking: ' || tracking, 'Your order has been shipped!')
                 WHEN 'delivered' THEN 'Your order has been delivered. Enjoy!'
-                ELSE 'Your order status has been updated to ' || NEW.status
+                ELSE 'Your order status has been updated to ' || new_status
             END,
-            jsonb_build_object(
-                'order_id', NEW.id,
-                'status', NEW.status,
-                'tracking_number', NEW.tracking_number,
-                'product_type', NEW.product_type
-            )
+            jsonb_build_object('order_id', order_uuid, 'status', new_status, 'tracking_number', tracking, 'product_type', product)
         );
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Payment notification function
 CREATE OR REPLACE FUNCTION notify_payment_update()
 RETURNS TRIGGER AS $$
+DECLARE
+    old_status TEXT;
+    new_status TEXT;
+    user_uuid UUID;
+    admin_note TEXT;
+    plan_type TEXT;
+    amount_val DECIMAL;
+    payment_uuid UUID;
 BEGIN
-    IF OLD.status IS DISTINCT FROM NEW.status AND NEW.status IN ('approved', 'rejected') THEN
+    old_status := OLD.status;
+    new_status := NEW.status;
+    user_uuid := NEW.user_id;
+    admin_note := NEW.admin_notes;
+    plan_type := NEW.plan;
+    amount_val := NEW.amount;
+    payment_uuid := NEW.id;
+    
+    IF old_status IS DISTINCT FROM new_status AND new_status IN ('approved', 'rejected') THEN
         INSERT INTO notifications (user_id, type, title, message, data)
         VALUES (
-            NEW.user_id,
-            CASE NEW.status
-                WHEN 'approved' THEN 'payment_approved'
-                ELSE 'payment_rejected'
-            END,
-            CASE NEW.status
-                WHEN 'approved' THEN 'Payment Approved'
-                ELSE 'Payment Rejected'
-            END,
-            CASE NEW.status
+            user_uuid,
+            CASE new_status WHEN 'approved' THEN 'payment_approved' ELSE 'payment_rejected' END,
+            CASE new_status WHEN 'approved' THEN 'Payment Approved' ELSE 'Payment Rejected' END,
+            CASE new_status
                 WHEN 'approved' THEN 'Your payment has been approved! Your subscription is now active.'
-                ELSE COALESCE('Your payment was rejected: ' || NEW.admin_notes, 'Your payment was rejected. Please try again.')
+                ELSE COALESCE('Your payment was rejected: ' || admin_note, 'Your payment was rejected. Please try again.')
             END,
-            jsonb_build_object(
-                'payment_id', NEW.id,
-                'plan', NEW.plan,
-                'amount', NEW.amount
-            )
+            jsonb_build_object('payment_id', payment_uuid, 'plan', plan_type, 'amount', amount_val)
         );
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Add conversation message function
-CREATE OR REPLACE FUNCTION add_conversation_message(
-    conv_id UUID,
-    message_text TEXT,
-    sender_type TEXT,
-    sender_name TEXT DEFAULT NULL
-)
+-- ============================================================
+-- STEP 9: NOTIFICATION TRIGGERS (after functions exist)
+-- ============================================================
+
+DROP TRIGGER IF EXISTS nfc_order_notification_trigger ON nfc_orders;
+CREATE TRIGGER nfc_order_notification_trigger AFTER UPDATE ON nfc_orders FOR EACH ROW EXECUTE FUNCTION notify_nfc_order_update();
+
+DROP TRIGGER IF EXISTS payment_notification_trigger ON payment_requests;
+CREATE TRIGGER payment_notification_trigger AFTER UPDATE ON payment_requests FOR EACH ROW EXECUTE FUNCTION notify_payment_update();
+
+-- ============================================================
+-- STEP 10: CONVERSATION FUNCTIONS
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION add_conversation_message(conv_id UUID, message_text TEXT, sender_type TEXT, sender_name TEXT DEFAULT NULL)
 RETURNS VOID AS $$
+DECLARE
+    profile_uuid UUID;
 BEGIN
-    UPDATE ai_conversations
-    SET
-        messages = messages || jsonb_build_array(jsonb_build_object(
-            'id', gen_random_uuid(),
-            'text', message_text,
-            'sender', sender_type,
-            'sender_name', sender_name,
-            'timestamp', NOW()
-        )),
+    UPDATE ai_conversations SET
+        messages = messages || jsonb_build_array(jsonb_build_object('id', gen_random_uuid(), 'text', message_text, 'sender', sender_type, 'sender_name', sender_name, 'timestamp', NOW())),
         last_message_at = NOW()
-    WHERE id = conv_id;
+    WHERE id = conv_id
+    RETURNING profile_id INTO profile_uuid;
 
     IF sender_type = 'visitor' THEN
         INSERT INTO notifications (user_id, type, title, message, data)
-        SELECT
-            profile_id,
-            'new_message',
-            'New Message',
-            COALESCE(sender_name, 'Someone') || ' sent you a message',
-            jsonb_build_object(
-                'conversation_id', conv_id,
-                'preview', LEFT(message_text, 100)
-            )
-        FROM ai_conversations
-        WHERE id = conv_id;
+        VALUES (profile_uuid, 'new_message', 'New Message', COALESCE(sender_name, 'Someone') || ' sent you a message', jsonb_build_object('conversation_id', conv_id, 'preview', LEFT(message_text, 100)));
     END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Get or create conversation function
-CREATE OR REPLACE FUNCTION get_or_create_conversation(
-    p_profile_id UUID,
-    p_visitor_id TEXT,
-    p_visitor_name TEXT DEFAULT NULL
-)
+CREATE OR REPLACE FUNCTION get_or_create_conversation(p_profile_id UUID, p_visitor_id TEXT, p_visitor_name TEXT DEFAULT NULL)
 RETURNS UUID AS $$
 DECLARE
     v_conversation_id UUID;
 BEGIN
-    SELECT id INTO v_conversation_id
-    FROM ai_conversations
-    WHERE profile_id = p_profile_id
-      AND visitor_id = p_visitor_id
-      AND status = 'active'
-    ORDER BY last_message_at DESC
-    LIMIT 1;
-
+    SELECT id INTO v_conversation_id FROM ai_conversations WHERE profile_id = p_profile_id AND visitor_id = p_visitor_id AND status = 'active' ORDER BY last_message_at DESC LIMIT 1;
     IF v_conversation_id IS NULL THEN
-        INSERT INTO ai_conversations (profile_id, visitor_id, visitor_name)
-        VALUES (p_profile_id, p_visitor_id, p_visitor_name)
-        RETURNING id INTO v_conversation_id;
+        INSERT INTO ai_conversations (profile_id, visitor_id, visitor_name) VALUES (p_profile_id, p_visitor_id, p_visitor_name) RETURNING id INTO v_conversation_id;
     END IF;
-
     RETURN v_conversation_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================================
--- STEP 6: CREATE TRIGGERS (after all functions exist)
--- ============================================================
-
-CREATE TRIGGER update_profiles_updated_at
-    BEFORE UPDATE ON profiles
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_leads_updated_at
-    BEFORE UPDATE ON leads
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_nfc_orders_updated_at
-    BEFORE UPDATE ON nfc_orders
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_subscriptions_updated_at
-    BEFORE UPDATE ON subscriptions
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER nfc_order_notification_trigger
-    AFTER UPDATE ON nfc_orders
-    FOR EACH ROW
-    EXECUTE FUNCTION notify_nfc_order_update();
-
-CREATE TRIGGER payment_notification_trigger
-    AFTER UPDATE ON payment_requests
-    FOR EACH ROW
-    EXECUTE FUNCTION notify_payment_update();
-
--- ============================================================
--- STEP 7: ENABLE REALTIME
+-- STEP 11: ENABLE REALTIME
 -- ============================================================
 
 ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
