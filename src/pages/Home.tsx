@@ -208,7 +208,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ delay: i * 0.12 }}
               className={`relative flex flex-col glass-neon rounded-[28px] sm:rounded-[36px] overflow-hidden ${PLAN_META[i].popular ? 'ring-1' : ''}`}
-              style={PLAN_META[i].popular ? { borderColor: `${PLAN_META[i].color}40`, boxShadow: `0 0 40px ${PLAN_META[i].color}15`, ringColor: PLAN_META[i].color } : {}}>
+              style={PLAN_META[i].popular ? { borderColor: `${PLAN_META[i].color}40`, boxShadow: `0 0 40px ${PLAN_META[i].color}15` } : {}}>
 
               {PLAN_META[i].popular && (
                 <div className="absolute top-4 end-4 z-10">

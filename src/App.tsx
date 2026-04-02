@@ -3,8 +3,8 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { motion } from 'motion/react';
 import { supabase } from './supabase';
 import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
-import Profile from './pages/Profile';
+import Dashboard from './pages/DashboardNew';
+import Profile from './pages/ProfileNew';
 import Explore from './pages/Explore';
 import Login from './pages/Login';
 import Navbar from './components/Navbar';
@@ -124,11 +124,16 @@ export default function App() {
   useEffect(() => {
     if (!user || !isConfigured) return;
 
-    supabase.from('profiles').select('*').eq('id', user.id).single()
-      .then(({ data, error }) => {
+    (async () => {
+      try {
+        const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         if (!error) setProfile(data as UserProfile);
-      })
-      .finally(() => setLoading(false));
+      } catch {
+        // Silently handle error
+      } finally {
+        setLoading(false);
+      }
+    })();
 
     const channel = supabase
       .channel(`profile:${user.id}`)

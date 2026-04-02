@@ -33,6 +33,24 @@ export interface NFCOrder {
   created_at?: string;
 }
 
+export interface Testimonial {
+  id: string;
+  name: string;
+  role?: string;
+  text: string;
+  rating: number;
+  avatarUrl?: string;
+}
+
+export interface Lead {
+  id: string;
+  profile_id: string;
+  name?: string;
+  phone: string;
+  message?: string;
+  created_at: string;
+}
+
 export interface UserProfile {
   uid: string;
   username: string;
@@ -43,12 +61,15 @@ export interface UserProfile {
   aiPersona?: string;
   qaPairs?: QAPair[];
   services?: Service[];
+  testimonials?: Testimonial[];
   featuredVideoUrl?: string;
   createdAt?: any;
   analytics?: {
     views: number;
     chats: number;
     messages: number;
+    leads?: number;
+    ctaClicks?: number;
   };
   themeColor?: string;
   aboutMe?: string;
@@ -59,6 +80,8 @@ export interface UserProfile {
   plan?: UserPlan;
   whatsapp?: string;
   phone?: string;
+  tone?: 'professional' | 'friendly' | 'persuasive' | 'casual' | 'energetic';
+  goal?: 'get-clients' | 'book-calls' | 'sell-service' | 'build-network' | 'share-knowledge';
 }
 
 export interface UserLink {
