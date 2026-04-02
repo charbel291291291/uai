@@ -7,6 +7,7 @@ import { LogOut, User, LayoutDashboard, Globe, ChevronRight, Crown, Zap } from '
 import { NEON_THEMES } from '../constants';
 import { useLang } from '../hooks/useLang';
 import { useSubscription } from '../hooks/useSubscription';
+import Notifications from './Notifications';
 
 export default function Navbar() {
   const { user, profile, theme, setTheme } = useAuth();
@@ -128,6 +129,9 @@ export default function Navbar() {
 
           {user ? (
             <>
+              {/* Notifications */}
+              <Notifications />
+
               <Link to="/dashboard"
                 className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 transition-colors text-sm font-medium text-white/50 hover:text-white">
                 <LayoutDashboard size={14} className="text-brand-accent" />

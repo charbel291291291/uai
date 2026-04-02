@@ -56,11 +56,31 @@ export interface NFCOrder {
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'nfc_order_update' | 'payment_approved' | 'payment_rejected' | 'subscription_expiring';
+  type: 'nfc_order_update' | 'payment_approved' | 'payment_rejected' | 'subscription_expiring' | 'new_message';
   title: string;
   message: string;
   data: Record<string, any>;
   read: boolean;
+  created_at: string;
+}
+
+// AI Conversation Types
+export interface ConversationMessage {
+  id: string;
+  text: string;
+  sender: 'user' | 'ai' | 'visitor';
+  sender_name?: string;
+  timestamp: string;
+}
+
+export interface AIConversation {
+  id: string;
+  profile_id: string;
+  visitor_id: string;
+  visitor_name?: string;
+  messages: ConversationMessage[];
+  status: 'active' | 'closed';
+  last_message_at: string;
   created_at: string;
 }
 
