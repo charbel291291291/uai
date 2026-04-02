@@ -7,6 +7,8 @@ import Dashboard from './pages/DashboardNew';
 import Profile from './pages/ProfileNew';
 import Explore from './pages/Explore';
 import Login from './pages/Login';
+import Upgrade from './pages/Upgrade';
+import Admin from './pages/Admin';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import InstallBanner from './components/InstallBanner';
@@ -60,6 +62,22 @@ function AppShell() {
             element={
               <AuthGate>
                 <Dashboard />
+              </AuthGate>
+            }
+          />
+          <Route
+            path="/upgrade"
+            element={
+              <AuthGate>
+                <Upgrade />
+              </AuthGate>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AuthGate>
+                <Admin />
               </AuthGate>
             }
           />

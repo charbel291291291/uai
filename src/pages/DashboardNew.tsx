@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../supabase';
 import { useAuth } from '../App';
+import { useSubscription } from '../hooks/useSubscription';
 import type { UserProfile, Service, Testimonial, UserLink } from '../types';
 import {
   User, Link as LinkIcon, Sparkles, Plus, Trash2, Save,
   LayoutDashboard, MessageSquare, Star, BarChart3, Users,
   Settings, ChevronRight, ExternalLink, CheckCircle2,
-  AlertCircle, Eye, TrendingUp, Zap
+  AlertCircle, Eye, TrendingUp, Zap, Crown, Lock
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, StatCard } from '../components/ui/Card';
@@ -30,12 +31,15 @@ const sidebarItems = [
 // ─── Dashboard Component ────────────────────────────────────────────────────
 export default function Dashboard() {
   const { user, profile: authProfile } = useAuth();
+  const { subscription, hasFeature, isPlan, isExpired, daysRemaining } = useSubscription(user?.id);
   const [activeTab, setActiveTab] = useState('overview');
   const [profile, setProfile] = useState<Partial<UserProfile>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [leads, setLeads] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
+
+  const currentPlan = subscription?.plan || 'free';
 
   // Initialize form data
   useEffect(() => {
@@ -342,6 +346,61 @@ export default function Dashboard() {
                 exit={{ opacity: 0, y: -20 }}
                 className="space-y-6"
               >
+                {/* Plan Status Banner */}
+                <Card className={`p-6 ${
+                  isExpired
+                    ? 'border-red-500/30 bg-red-500/5'
+                    : currentPlan === 'elite'
+                    ? 'border-yellow-500/30 bg-gradient-to-r from-yellow-500/10 to-orange-500/10'
+                    : currentPlan === 'pro'
+                    ? 'border-brand-accent/30 bg-brand-accent/5'
+                    : 'border-white/10'
+                }`}>
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                        isExpired
+                          ? 'bg-red-500/20'
+                          : currentPlan === 'elite'
+                          ? 'bg-yellow-500/20'
+                          : currentPlan === 'pro'
+                          ? 'bg-brand-accent/20'
+                          : 'bg-white/10'
+                      }`}>
+                        {currentPlan === 'free' ? (
+                          <Zap className="text-white/50" size={28} />
+                        ) : isExpired ? (
+                          <AlertCircle className="text-red-500" size={28} />
+                        ) : (
+                          <Crown className={
+                            currentPlan === 'elite' ? 'text-yellow-500' : 'text-brand-accent'
+                          } size={28} />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-white capitalize">
+                          {currentPlan} Plan
+                          {isExpired && ' (Expired)'}
+                        </h3>
+                        <p className="text-white/50">
+                          {isExpired
+                            ? 'Your subscription has expired. Renew to keep your premium features.'
+                            : currentPlan === 'free'
+                            ? 'Upgrade to unlock premium features'
+                            : daysRemaining
+                            ? `${daysRemaining} days remaining`
+                            : 'Active subscription'}
+                        </p>
+                      </div>
+                    </div>
+                    <Link to="/upgrade">
+                      <Button variant={currentPlan === 'free' || isExpired ? 'primary' : 'secondary'}>
+                        {currentPlan === 'free' ? 'Upgrade Now' : isExpired ? 'Renew' : 'Manage'}
+                      </Button>
+                    </Link>
+                  </div>
+                </Card>
+
                 {/* Stats Grid */}
                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <StatCard
@@ -509,10 +568,36 @@ export default function Dashboard() {
               >
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-white">Your Services</h3>
-                  <Button size="sm" leftIcon={<Plus size={16} />} onClick={addService}>
-                    Add Service
-                  </Button>
+                  {/* Plan restriction for unlimited services */}
+                  {(hasFeature('unlimited-services') || (profile.services?.length || 0) < 3) ? (
+                    <Button size="sm" leftIcon={<Plus size={16} />} onClick={addService}>
+                      Add Service
+                    </Button>
+                  ) : (
+                    <Link to="/upgrade">
+                      <Button size="sm" variant="secondary">
+                        <Lock size={14} className="mr-1" />
+                        Upgrade for More
+                      </Button>
+                    </Link>
+                  )}
                 </div>
+
+                {/* Service limit warning for free users */}
+                {!hasFeature('unlimited-services') && (profile.services?.length || 0) >= 3 && (
+                  <Card className="p-4 border-yellow-500/30 bg-yellow-500/5">
+                    <div className="flex items-center gap-3">
+                      <Lock className="text-yellow-500" size={20} />
+                      <p className="text-sm text-white/70">
+                        Free plan limited to 3 services.{' '}
+                        <Link to="/upgrade" className="text-brand-accent hover:underline">
+                          Upgrade to Pro
+                        </Link>{' '}
+                        for unlimited services.
+                      </p>
+                    </div>
+                  </Card>
+                )}
 
                 {profile.services?.map((service, i) => (
                   <Card key={service.id}>
@@ -720,16 +805,34 @@ export default function Dashboard() {
                 exit={{ opacity: 0, y: -20 }}
                 className="space-y-4"
               >
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-white">AI Knowledge Base</h3>
-                  <Button size="sm" leftIcon={<Plus size={16} />} onClick={addQA}>
-                    Add Q&A
-                  </Button>
-                </div>
+                {/* AI Mode requires Pro or Elite */}
+                {!hasFeature('ai-mode') ? (
+                  <Card className="p-12 text-center">
+                    <div className="w-20 h-20 rounded-full bg-brand-accent/20 flex items-center justify-center mx-auto mb-6">
+                      <Crown className="text-brand-accent" size={40} />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">AI Mode is a Pro Feature</h3>
+                    <p className="text-white/50 mb-6 max-w-md mx-auto">
+                      Upgrade to Pro or Elite to unlock your AI Twin. Your AI will answer questions about you 24/7.
+                    </p>
+                    <Link to="/upgrade">
+                      <Button variant="primary" size="lg">
+                        Upgrade to Pro
+                      </Button>
+                    </Link>
+                  </Card>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-white">AI Knowledge Base</h3>
+                      <Button size="sm" leftIcon={<Plus size={16} />} onClick={addQA}>
+                        Add Q&A
+                      </Button>
+                    </div>
 
-                <p className="text-white/50 text-sm">
-                  Add common questions and answers to help your AI respond better.
-                </p>
+                    <p className="text-white/50 text-sm">
+                      Add common questions and answers to help your AI respond better.
+                    </p>
 
                 {profile.qaPairs?.map((qa, i) => (
                   <Card key={i}>
@@ -770,6 +873,8 @@ export default function Dashboard() {
                     </Button>
                   </Card>
                 )}
+                  </>
+                )}
               </motion.div>
             )}
 
@@ -782,35 +887,54 @@ export default function Dashboard() {
                 exit={{ opacity: 0, y: -20 }}
                 className="space-y-6"
               >
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard
-                    label="Profile Views"
-                    value={profile.analytics?.views || 0}
-                    icon={<Eye size={18} />}
-                  />
-                  <StatCard
-                    label="AI Conversations"
-                    value={profile.analytics?.chats || 0}
-                    icon={<MessageSquare size={18} />}
-                  />
-                  <StatCard
-                    label="Messages Exchanged"
-                    value={profile.analytics?.messages || 0}
-                    icon={<TrendingUp size={18} />}
-                  />
-                  <StatCard
-                    label="Leads Captured"
-                    value={leads.length}
-                    icon={<Users size={18} />}
-                  />
-                </div>
+                {!hasFeature('analytics') ? (
+                  <Card className="p-12 text-center">
+                    <div className="w-20 h-20 rounded-full bg-brand-accent/20 flex items-center justify-center mx-auto mb-6">
+                      <BarChart3 className="text-brand-accent" size={40} />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Analytics is a Pro Feature</h3>
+                    <p className="text-white/50 mb-6 max-w-md mx-auto">
+                      Upgrade to Pro or Elite to unlock detailed analytics about your profile performance.
+                    </p>
+                    <Link to="/upgrade">
+                      <Button variant="primary" size="lg">
+                        Upgrade to Pro
+                      </Button>
+                    </Link>
+                  </Card>
+                ) : (
+                  <>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <StatCard
+                        label="Profile Views"
+                        value={profile.analytics?.views || 0}
+                        icon={<Eye size={18} />}
+                      />
+                      <StatCard
+                        label="AI Conversations"
+                        value={profile.analytics?.chats || 0}
+                        icon={<MessageSquare size={18} />}
+                      />
+                      <StatCard
+                        label="Messages Exchanged"
+                        value={profile.analytics?.messages || 0}
+                        icon={<TrendingUp size={18} />}
+                      />
+                      <StatCard
+                        label="Leads Captured"
+                        value={leads.length}
+                        icon={<Users size={18} />}
+                      />
+                    </div>
 
-                <Card>
-                  <h3 className="text-lg font-semibold text-white mb-4">Performance Overview</h3>
-                  <div className="h-64 flex items-center justify-center text-white/30">
-                    <p>Charts coming soon...</p>
-                  </div>
-                </Card>
+                    <Card>
+                      <h3 className="text-lg font-semibold text-white mb-4">Performance Overview</h3>
+                      <div className="h-64 flex items-center justify-center text-white/30">
+                        <p>Charts coming soon...</p>
+                      </div>
+                    </Card>
+                  </>
+                )}
               </motion.div>
             )}
 

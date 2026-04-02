@@ -3,15 +3,20 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { supabase } from '../supabase';
 import { motion, AnimatePresence } from 'motion/react';
-import { LogOut, User, LayoutDashboard, Globe, ChevronRight } from 'lucide-react';
+import { LogOut, User, LayoutDashboard, Globe, ChevronRight, Crown, Zap } from 'lucide-react';
 import { NEON_THEMES } from '../constants';
 import { useLang } from '../hooks/useLang';
+import { useSubscription } from '../hooks/useSubscription';
 
 export default function Navbar() {
   const { user, profile, theme, setTheme } = useAuth();
   const { lang, setLang, t } = useLang();
   const navigate = useNavigate();
   const [langExpanded, setLangExpanded] = useState(false);
+  const { subscription, isExpired } = useSubscription(user?.id);
+
+  const currentPlan = subscription?.plan || 'free';
+  const planIcon = currentPlan === 'elite' ? Crown : currentPlan === 'pro' ? Zap : null;
 
   const cycleTheme = () => {
     const idx = NEON_THEMES.findIndex(t => t.id === theme);
@@ -133,6 +138,27 @@ export default function Navbar() {
                   className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 transition-colors text-sm font-medium text-white/50 hover:text-white">
                   <User size={14} className="text-brand-accent" />
                   {t('nav.profile')}
+                </Link>
+              )}
+              {/* Plan Badge & Upgrade Button */}
+              {currentPlan === 'free' ? (
+                <Link to="/upgrade"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-gradient-to-r from-brand-accent to-purple-500 text-black text-sm font-bold hover:opacity-90 transition-opacity">
+                  <Crown size={14} />
+                  Upgrade
+                </Link>
+              ) : (
+                <Link to="/upgrade"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-bold ${
+                    isExpired
+                      ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                      : currentPlan === 'elite'
+                      ? 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-400 border border-yellow-500/30'
+                      : 'bg-gradient-to-r from-brand-accent/20 to-blue-500/20 text-brand-accent border border-brand-accent/30'
+                  }`}>
+                  {planIcon && <planIcon size={14} />}
+                  {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
+                  {isExpired && ' (Expired)'}
                 </Link>
               )}
               <button onClick={handleLogout}

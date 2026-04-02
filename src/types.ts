@@ -111,3 +111,70 @@ export interface ContactMessage {
   message: string;
   createdAt: string;
 }
+
+// Subscription System Types
+export type PaymentMethod = 'whish' | 'omt' | 'bank';
+export type PaymentStatus = 'pending' | 'approved' | 'rejected';
+export type SubscriptionStatus = 'active' | 'expired' | 'cancelled';
+
+export interface PaymentRequest {
+  id: string;
+  user_id: string;
+  plan: Exclude<UserPlan, 'free'>;
+  payment_method: PaymentMethod;
+  proof_image_url: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  admin_notes?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  created_at: string;
+}
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  plan: UserPlan;
+  status: SubscriptionStatus;
+  started_at: string;
+  expires_at?: string;
+  payment_request_id?: string;
+  auto_renew: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlanFeature {
+  id: string;
+  label: string;
+  free: boolean | string;
+  pro: boolean | string;
+  elite: boolean | string;
+}
+
+export const PLAN_PRICES: Record<Exclude<UserPlan, 'free'>, { monthly: number; yearly: number }> = {
+  pro: { monthly: 5, yearly: 50 },
+  elite: { monthly: 10, yearly: 100 },
+};
+
+export const PAYMENT_METHODS: { id: PaymentMethod; label: string; icon: string; instructions: string }[] = [
+  {
+    id: 'whish',
+    label: 'Whish Money',
+    icon: 'Wallet',
+    instructions: 'Send to Whish Money account: 03/123 456',
+  },
+  {
+    id: 'omt',
+    label: 'OMT',
+    icon: 'Banknote',
+    instructions: 'Send via OMT to: Lebanon / Beirut / Phone: 03/123 456',
+  },
+  {
+    id: 'bank',
+    label: 'Bank Transfer',
+    icon: 'Building2',
+    instructions: 'Bank: BDL\nAccount: 1234567890\nIBAN: LB12 1234 5678 9012 3456 7890 1234',
+  },
+];
