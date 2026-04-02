@@ -1,15 +1,16 @@
 -- ============================================================
 -- UAi - Complete Database Setup (Supabase SQL Editor Compatible)
--- Copy and paste this entire file into Supabase SQL Editor
+-- Run this entire file in Supabase SQL Editor
 -- ============================================================
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================================
--- 01_CORE_TABLES
+-- STEP 1: CREATE ALL TABLES FIRST (without triggers)
 -- ============================================================
 
+-- Profiles table
 CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     username TEXT UNIQUE NOT NULL,
@@ -39,11 +40,7 @@ CREATE TABLE IF NOT EXISTS profiles (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_profiles_username ON profiles(username);
-CREATE INDEX IF NOT EXISTS idx_profiles_mode ON profiles(mode);
-CREATE INDEX IF NOT EXISTS idx_profiles_plan ON profiles(plan);
-CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON profiles(created_at);
-
+-- Likes table
 CREATE TABLE IF NOT EXISTS likes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -52,9 +49,7 @@ CREATE TABLE IF NOT EXISTS likes (
     UNIQUE(user_id, profile_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id);
-CREATE INDEX IF NOT EXISTS idx_likes_profile_id ON likes(profile_id);
-
+-- Messages table
 CREATE TABLE IF NOT EXISTS messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     profile_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -66,9 +61,7 @@ CREATE TABLE IF NOT EXISTS messages (
     read BOOLEAN DEFAULT false
 );
 
-CREATE INDEX IF NOT EXISTS idx_messages_profile_id ON messages(profile_id);
-CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
-
+-- Leads table
 CREATE TABLE IF NOT EXISTS leads (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     profile_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -81,14 +74,7 @@ CREATE TABLE IF NOT EXISTS leads (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_leads_profile_id ON leads(profile_id);
-CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
-
--- ============================================================
--- 02_NFC_ORDERS
--- ============================================================
-
+-- NFC Orders table
 CREATE TABLE IF NOT EXISTS nfc_orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -109,15 +95,7 @@ CREATE TABLE IF NOT EXISTS nfc_orders (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_nfc_orders_user_id ON nfc_orders(user_id);
-CREATE INDEX IF NOT EXISTS idx_nfc_orders_status ON nfc_orders(status);
-CREATE INDEX IF NOT EXISTS idx_nfc_orders_created_at ON nfc_orders(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_nfc_orders_tracking ON nfc_orders(tracking_number);
-
--- ============================================================
--- 03_SUBSCRIPTIONS_PAYMENTS
--- ============================================================
-
+-- Payment Requests table
 CREATE TABLE IF NOT EXISTS payment_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -133,10 +111,7 @@ CREATE TABLE IF NOT EXISTS payment_requests (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_payment_requests_user_id ON payment_requests(user_id);
-CREATE INDEX IF NOT EXISTS idx_payment_requests_status ON payment_requests(status);
-CREATE INDEX IF NOT EXISTS idx_payment_requests_created_at ON payment_requests(created_at DESC);
-
+-- Subscriptions table
 CREATE TABLE IF NOT EXISTS subscriptions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -151,14 +126,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     UNIQUE(user_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_expires_at ON subscriptions(expires_at);
-
--- ============================================================
--- 04_NOTIFICATIONS
--- ============================================================
-
+-- Notifications table
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -170,14 +138,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
-CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
-
--- ============================================================
--- 05_AI_CONVERSATIONS
--- ============================================================
-
+-- AI Conversations table
 CREATE TABLE IF NOT EXISTS ai_conversations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     profile_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -189,13 +150,49 @@ CREATE TABLE IF NOT EXISTS ai_conversations (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- ============================================================
+-- STEP 2: CREATE INDEXES
+-- ============================================================
+
+CREATE INDEX IF NOT EXISTS idx_profiles_username ON profiles(username);
+CREATE INDEX IF NOT EXISTS idx_profiles_mode ON profiles(mode);
+CREATE INDEX IF NOT EXISTS idx_profiles_plan ON profiles(plan);
+CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON profiles(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_likes_profile_id ON likes(profile_id);
+
+CREATE INDEX IF NOT EXISTS idx_messages_profile_id ON messages(profile_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_leads_profile_id ON leads(profile_id);
+CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
+
+CREATE INDEX IF NOT EXISTS idx_nfc_orders_user_id ON nfc_orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_nfc_orders_status ON nfc_orders(status);
+CREATE INDEX IF NOT EXISTS idx_nfc_orders_created_at ON nfc_orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_nfc_orders_tracking ON nfc_orders(tracking_number);
+
+CREATE INDEX IF NOT EXISTS idx_payment_requests_user_id ON payment_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_payment_requests_status ON payment_requests(status);
+CREATE INDEX IF NOT EXISTS idx_payment_requests_created_at ON payment_requests(created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_expires_at ON subscriptions(expires_at);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
+
 CREATE INDEX IF NOT EXISTS idx_ai_conversations_profile_id ON ai_conversations(profile_id);
 CREATE INDEX IF NOT EXISTS idx_ai_conversations_visitor_id ON ai_conversations(visitor_id);
 CREATE INDEX IF NOT EXISTS idx_ai_conversations_status ON ai_conversations(status);
 CREATE INDEX IF NOT EXISTS idx_ai_conversations_last_message_at ON ai_conversations(last_message_at DESC);
 
 -- ============================================================
--- RLS POLICIES
+-- STEP 3: ENABLE RLS
 -- ============================================================
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -207,6 +204,10 @@ ALTER TABLE payment_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_conversations ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- STEP 4: CREATE RLS POLICIES
+-- ============================================================
 
 -- Profiles
 CREATE POLICY "Public profiles are viewable by everyone"
@@ -361,10 +362,10 @@ CREATE POLICY "Anyone can update active conversations"
     USING (status = 'active');
 
 -- ============================================================
--- FUNCTIONS & TRIGGERS
+-- STEP 5: CREATE FUNCTIONS (without triggers first)
 -- ============================================================
 
--- Update updated_at timestamp
+-- Update updated_at function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -373,27 +374,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_profiles_updated_at
-    BEFORE UPDATE ON profiles
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_leads_updated_at
-    BEFORE UPDATE ON leads
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_nfc_orders_updated_at
-    BEFORE UPDATE ON nfc_orders
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_subscriptions_updated_at
-    BEFORE UPDATE ON subscriptions
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
--- Increment analytics
+-- Increment analytics function
 CREATE OR REPLACE FUNCTION increment_profile_analytics(
     profile_uuid UUID,
     field TEXT
@@ -410,7 +391,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Approve payment request
+-- Approve payment request function
 CREATE OR REPLACE FUNCTION approve_payment_request(
     request_id UUID,
     admin_id UUID,
@@ -452,7 +433,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Check expired subscriptions
+-- Check expired subscriptions function
 CREATE OR REPLACE FUNCTION check_expired_subscriptions()
 RETURNS VOID AS $$
 BEGIN
@@ -469,7 +450,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Update NFC order
+-- Update NFC order function
 CREATE OR REPLACE FUNCTION update_nfc_order(
     order_id UUID,
     new_status TEXT,
@@ -494,7 +475,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- NFC order notification
+-- NFC order notification function
 CREATE OR REPLACE FUNCTION notify_nfc_order_update()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -527,12 +508,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE TRIGGER nfc_order_notification_trigger
-    AFTER UPDATE ON nfc_orders
-    FOR EACH ROW
-    EXECUTE FUNCTION notify_nfc_order_update();
-
--- Payment notification
+-- Payment notification function
 CREATE OR REPLACE FUNCTION notify_payment_update()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -563,12 +539,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE TRIGGER payment_notification_trigger
-    AFTER UPDATE ON payment_requests
-    FOR EACH ROW
-    EXECUTE FUNCTION notify_payment_update();
-
--- Add conversation message
+-- Add conversation message function
 CREATE OR REPLACE FUNCTION add_conversation_message(
     conv_id UUID,
     message_text TEXT,
@@ -606,7 +577,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Get or create conversation
+-- Get or create conversation function
 CREATE OR REPLACE FUNCTION get_or_create_conversation(
     p_profile_id UUID,
     p_visitor_id TEXT,
@@ -635,7 +606,41 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================================
--- ENABLE REALTIME
+-- STEP 6: CREATE TRIGGERS (after all functions exist)
+-- ============================================================
+
+CREATE TRIGGER update_profiles_updated_at
+    BEFORE UPDATE ON profiles
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_leads_updated_at
+    BEFORE UPDATE ON leads
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_nfc_orders_updated_at
+    BEFORE UPDATE ON nfc_orders
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_subscriptions_updated_at
+    BEFORE UPDATE ON subscriptions
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER nfc_order_notification_trigger
+    AFTER UPDATE ON nfc_orders
+    FOR EACH ROW
+    EXECUTE FUNCTION notify_nfc_order_update();
+
+CREATE TRIGGER payment_notification_trigger
+    AFTER UPDATE ON payment_requests
+    FOR EACH ROW
+    EXECUTE FUNCTION notify_payment_update();
+
+-- ============================================================
+-- STEP 7: ENABLE REALTIME
 -- ============================================================
 
 ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
@@ -657,12 +662,5 @@ ALTER TABLE subscriptions REPLICA IDENTITY FULL;
 ALTER TABLE payment_requests REPLICA IDENTITY FULL;
 ALTER TABLE notifications REPLICA IDENTITY FULL;
 ALTER TABLE ai_conversations REPLICA IDENTITY FULL;
-
--- ============================================================
--- STORAGE BUCKETS (Create in Supabase Dashboard)
--- ============================================================
--- 1. avatars - Public bucket for user avatars
--- 2. payment-proofs - Private bucket for payment screenshots
--- ============================================================
 
 -- Setup complete!
