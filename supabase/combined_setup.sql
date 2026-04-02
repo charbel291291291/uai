@@ -197,16 +197,16 @@ CREATE POLICY "Profile owners can delete their leads" ON leads FOR DELETE USING 
 CREATE POLICY "Users can view their own orders" ON nfc_orders FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can create their own orders" ON nfc_orders FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update their own pending orders" ON nfc_orders FOR UPDATE USING (auth.uid() = user_id AND status = 'pending');
-CREATE POLICY "Admins can view all orders" ON nfc_orders FOR SELECT USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true));
-CREATE POLICY "Admins can update all orders" ON nfc_orders FOR UPDATE USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true));
+CREATE POLICY "Admins can view all orders" ON nfc_orders FOR SELECT USING ((SELECT is_admin FROM profiles WHERE id = auth.uid()));
+CREATE POLICY "Admins can update all orders" ON nfc_orders FOR UPDATE USING ((SELECT is_admin FROM profiles WHERE id = auth.uid()));
 
 CREATE POLICY "Users can view their own payment requests" ON payment_requests FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can create payment requests" ON payment_requests FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Admins can view all payment requests" ON payment_requests FOR SELECT USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true));
-CREATE POLICY "Admins can update payment requests" ON payment_requests FOR UPDATE USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true));
+CREATE POLICY "Admins can view all payment requests" ON payment_requests FOR SELECT USING ((SELECT is_admin FROM profiles WHERE id = auth.uid()));
+CREATE POLICY "Admins can update payment requests" ON payment_requests FOR UPDATE USING ((SELECT is_admin FROM profiles WHERE id = auth.uid()));
 
 CREATE POLICY "Users can view their own subscription" ON subscriptions FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Admins can manage all subscriptions" ON subscriptions FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true));
+CREATE POLICY "Admins can manage all subscriptions" ON subscriptions FOR ALL USING ((SELECT is_admin FROM profiles WHERE id = auth.uid()));
 
 CREATE POLICY "Users can view their own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can update their own notifications" ON notifications FOR UPDATE USING (auth.uid() = user_id);
