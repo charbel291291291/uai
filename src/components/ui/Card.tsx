@@ -1,5 +1,3 @@
-import { motion } from 'motion/react';
-
 interface CardProps {
   children: React.ReactNode;
   className?: string;
@@ -17,22 +15,23 @@ export function Card({ children, className = '', hover = true, onClick, padding 
   };
 
   return (
-    <motion.div
+    <div
       className={`
         relative overflow-hidden
         bg-[rgba(15,23,42,0.5)] backdrop-blur-xl
         border border-white/10
         rounded-2xl
-        transition-all duration-300
+        transition-transform duration-200 ease-out
         ${hover ? 'hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4),0_0_30px_rgba(58,134,255,0.1)]' : ''}
         ${paddingClasses[padding]}
         ${className}
       `}
-      whileHover={hover ? { y: -4 } : undefined}
       onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 

@@ -36,21 +36,15 @@ export default function Navbar() {
         <img
           src="/logo.png"
           alt="UAi by eyedeaz"
-          width={320}
-          height={193}
-          className="h-7 sm:h-9 w-auto object-contain select-none transition-all duration-250 ease-out group-hover:scale-105"
+          width={144}
+          height={87}
+          className="h-7 sm:h-9 w-auto object-contain select-none transition-all duration-200 ease-out group-hover:scale-105"
           style={{
             filter: 'drop-shadow(0 0 6px rgba(0,198,255,0.35)) drop-shadow(0 0 14px rgba(37,99,235,0.20))',
           }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLImageElement).style.filter =
-              'drop-shadow(0 0 8px rgba(0,198,255,0.55)) drop-shadow(0 0 20px rgba(37,99,235,0.30))';
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLImageElement).style.filter =
-              'drop-shadow(0 0 6px rgba(0,198,255,0.35)) drop-shadow(0 0 14px rgba(37,99,235,0.20))';
-          }}
           draggable={false}
+          decoding="async"
+          loading="eager"
         />
       </button>
 

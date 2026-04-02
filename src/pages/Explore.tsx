@@ -113,23 +113,19 @@ export default function Explore() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProfiles.map((profile) => (
-            <motion.div
+            <div
               key={profile.uid}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -5 }}
-              className="group relative"
+              className="group relative transition-transform duration-200 hover:-translate-y-1.5"
             >
               <Link to={`/p/${profile.username}`} className="block h-full p-8 glass-card border border-white/10 rounded-[40px] hover:border-brand-cyan/30 transition-all overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <Sparkles className="text-brand-cyan" size={20} />
                 </div>
                 
                 <div className="flex flex-col items-center text-center space-y-4">
                   <div className="w-24 h-24 rounded-3xl overflow-hidden border-2 border-white/10 group-hover:border-brand-cyan/50 transition-colors glow-box">
                     {profile.avatarUrl ? (
-                      <img src={profile.avatarUrl} alt={profile.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      <img src={profile.avatarUrl} alt={profile.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
                     ) : (
                       <div className="w-full h-full bg-white/5 flex items-center justify-center text-white/20">
                         <UserIcon size={40} />
@@ -166,7 +162,7 @@ export default function Explore() {
                   </div>
                 </div>
               </Link>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}

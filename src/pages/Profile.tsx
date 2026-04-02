@@ -683,8 +683,8 @@ export default function Profile() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {profile.services!.map(service => (
-              <motion.div key={service.id} whileHover={{ y: -6 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                className={`relative flex flex-col p-6 glass-card border rounded-3xl overflow-hidden transition-all ${
+              <div key={service.id}
+                className={`relative flex flex-col p-6 glass-card border rounded-3xl overflow-hidden transition-all duration-200 hover:-translate-y-1.5 ${
                   service.featured ? '' : 'border-white/10'
                 }`}
                 style={service.featured ? {
@@ -720,10 +720,10 @@ export default function Profile() {
                   )}
                   <ServiceCTA service={service} />
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.section>
+        </section>
       )}
 
       {/* CTA Strip */}

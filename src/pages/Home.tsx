@@ -94,15 +94,13 @@ export default function Home() {
           {tr.features.map((f, i) => {
             const Icon = FEAT_ICONS[i];
             return (
-              <motion.div key={i}
-                initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ delay: i * 0.1 }} whileHover={{ y: -6 }}
-                className="p-6 sm:p-9 glass-neon rounded-[28px] sm:rounded-[36px] transition-all group relative overflow-hidden">
-                <div className="absolute top-0 end-0 w-32 h-32 bg-brand-glow blur-[60px] opacity-0 group-hover:opacity-30 transition-opacity" />
-                <Icon className="text-brand-accent mb-5 sm:mb-7 group-hover:scale-110 transition-transform" size={32} />
+              <div key={i}
+                className="p-6 sm:p-9 glass-neon rounded-[28px] sm:rounded-[36px] transition-all duration-200 hover:-translate-y-1.5 group relative overflow-hidden">
+                <div className="absolute top-0 end-0 w-32 h-32 bg-brand-glow blur-[60px] opacity-0 group-hover:opacity-30 transition-opacity duration-200" />
+                <Icon className="text-brand-accent mb-5 sm:mb-7 group-hover:scale-110 transition-transform duration-200" size={32} />
                 <h3 className="text-lg sm:text-xl font-black mb-2 sm:mb-3 text-brand-text tracking-tight">{f.title}</h3>
                 <p className="text-brand-text-muted text-sm leading-relaxed">{f.desc}</p>
-              </motion.div>
+              </div>
             );
           })}
         </div>
@@ -122,13 +120,11 @@ export default function Home() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-7">
           {tr.modes.map((mode, i) => (
-            <motion.div key={i}
-              initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }} transition={{ delay: i * 0.12 }} whileHover={{ y: -6 }}
-              className="relative glass-neon rounded-[28px] sm:rounded-[36px] overflow-hidden group">
+            <div key={i}
+              className="relative glass-neon rounded-[28px] sm:rounded-[36px] overflow-hidden group transition-transform duration-200 hover:-translate-y-1.5">
               <div className="relative h-44 sm:h-52 overflow-hidden">
-                <img src={MODE_META[i].img} alt={mode.label}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                <img src={MODE_META[i].img} alt={mode.label} loading="lazy" decoding="async"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60" />
               </div>
               <div className="p-5 sm:p-7">
@@ -139,7 +135,7 @@ export default function Home() {
                   {mode.feature}
                 </span>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </motion.section>
@@ -158,19 +154,17 @@ export default function Home() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5 mb-8 sm:mb-10">
           {NFC_META.map((p, i) => (
-            <motion.div key={i}
-              initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }} transition={{ delay: i * 0.08 }} whileHover={{ y: -8 }}
-              className="glass-neon rounded-[22px] sm:rounded-[28px] overflow-hidden group cursor-pointer">
+            <div key={i}
+              className="glass-neon rounded-[22px] sm:rounded-[28px] overflow-hidden group cursor-pointer transition-transform duration-200 hover:-translate-y-2">
               <div className="relative h-36 sm:h-44 overflow-hidden bg-white/5">
-                <img src={p.img} alt={tr.nfcItems[i]}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                <img src={p.img} alt={tr.nfcItems[i]} loading="lazy" decoding="async"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               </div>
               <div className="p-4 sm:p-5 text-center">
                 <h3 className="font-black text-white text-xs sm:text-sm mb-1">{tr.nfcItems[i]}</h3>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 

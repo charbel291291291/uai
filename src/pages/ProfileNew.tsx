@@ -677,23 +677,17 @@ AI:`;
 
             <div className="flex flex-wrap gap-3">
               {profile.links.map((link, i) => (
-                <motion.a
+                <a
                   key={i}
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white hover:border-white/20 transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all duration-200 hover:scale-105 active:scale-95"
                 >
                   <Globe size={16} />
                   <span className="font-medium">{link.title}</span>
                   <ExternalLink size={14} className="text-white/40" />
-                </motion.a>
+                </a>
               ))}
             </div>
           </div>
