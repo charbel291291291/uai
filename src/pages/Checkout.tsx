@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, CreditCard, MapPin, Truck, Check } from 'lucide-react';
+import { ArrowLeft, CreditCard, MapPin, Truck, Check, Upload, X } from 'lucide-react';
 import { useAuth } from '../App';
+import { supabase } from '../supabase';
 import { cartService, addressService, deliveryService, ecommerceCheckoutService } from '../services/ecommerceService';
+import { productService } from '../services/monetizationService';
 import type { CartItem, Address } from '../services/ecommerceService';
+import type { Product } from '../services/monetizationService';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { SEO } from '../components/SEO';
 
 const PAYMENT_METHODS = [
-  { id: 'cod', label: 'Cash on Delivery', icon: '💵', fee: 0 },
+  { id: 'cod', label: 'Cash on Delivery', icon: '💵', fee: 0, requiresProof: false },
   { id: 'omt', label: 'OMT Payment', icon: '🏦', requiresProof: true },
   { id: 'wish', label: 'Whish Money', icon: '💳', requiresProof: true },
   { id: 'bank', label: 'Bank Transfer', icon: '🏛️', requiresProof: true },
@@ -20,8 +23,10 @@ const PAYMENT_METHODS = [
 export default function Checkout() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [directProduct, setDirectProduct] = useState<Product | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState('cod');
@@ -37,8 +42,13 @@ export default function Checkout() {
     address_details: '',
   });
   
+  // Payment proof upload state
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
+  
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -46,17 +56,53 @@ export default function Checkout() {
       return;
     }
     
-    loadCart();
+    const productId = searchParams.get('product');
+    
+    if (productId) {
+      // Direct product purchase flow
+      loadDirectProduct(productId);
+    } else {
+      // Cart-based checkout flow
+      loadCart();
+    }
+    
     loadAddresses();
-  }, [user]);
+  }, [user, searchParams]);
+
+  const loadDirectProduct = async (productId: string) => {
+    try {
+      const { data, error } = await productService.getProductById(productId);
+      
+      if (error || !data) {
+        setError('Product not found. Please try again.');
+        setTimeout(() => navigate('/'), 3000);
+        return;
+      }
+      
+      setDirectProduct(data);
+      
+      // Auto-add to cart with quantity 1
+      const { error: cartError } = await cartService.addToCart(user!.id, data.id, 1);
+      if (cartError) {
+        console.error('Failed to add to cart:', cartError);
+      }
+      
+      // Refresh cart to include the product
+      await loadCart();
+    } catch (err) {
+      console.error('Error loading product:', err);
+      setError('Failed to load product. Please try again.');
+    }
+  };
 
   const loadCart = async () => {
     if (!user) return;
     const { data } = await cartService.getCart(user.id);
     if (data && data.length > 0) {
       setCart(data);
-    } else {
-      navigate('/shop'); // Redirect to shop if cart is empty
+    } else if (!directProduct) {
+      // Only redirect if not a direct product purchase
+      navigate('/'); // Redirect to home if cart is empty and no direct product
     }
   };
 
@@ -78,19 +124,79 @@ export default function Checkout() {
 
   const total = subtotal + deliveryFee;
 
+  // Payment proof upload handlers
+  const handleProofUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+    
+    setProofFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProofPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeProof = () => {
+    setProofFile(null);
+    setProofPreview(null);
+  };
+
   const handlePlaceOrder = async () => {
     if (!user || !selectedAddress) return;
     
+    // Validate proof upload for OMT/Wish/Bank transfer
+    const selectedPayment = PAYMENT_METHODS.find(m => m.id === paymentMethod);
+    if (selectedPayment?.requiresProof && !proofFile) {
+      alert('Please upload payment proof before placing order');
+      return;
+    }
+    
     setLoading(true);
     try {
+      let proofUrl = '';
+      
+      // Upload proof if required
+      if (proofFile) {
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('payment_proofs')
+          .upload(`${user.id}/${Date.now()}_${proofFile.name}`, proofFile);
+        
+        if (uploadError) {
+          throw new Error('Failed to upload payment proof');
+        }
+        
+        const { data: urlData } = supabase.storage
+          .from('payment_proofs')
+          .getPublicUrl(uploadData.path);
+        
+        proofUrl = urlData.publicUrl;
+      }
+      
       const { data, error } = await ecommerceCheckoutService.checkout(
         user.id,
         paymentMethod as any,
-        selectedAddress
+        selectedAddress,
+        undefined, // referenceNumber (optional)
+        proofUrl || undefined
       );
 
       if (error) {
-        alert('Error placing order: ' + error.message);
+        setError('Error placing order: ' + error.message);
         return;
       }
 
@@ -98,9 +204,9 @@ export default function Checkout() {
       setTimeout(() => {
         navigate('/dashboard');
       }, 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Checkout error:', error);
-      alert('Failed to place order. Please try again.');
+      setError(error.message || 'Failed to place order. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -294,6 +400,58 @@ export default function Checkout() {
                     </label>
                   ))}
                 </div>
+
+                {/* Payment Proof Upload (for OMT/Wish/Bank) */}
+                {PAYMENT_METHODS.find(m => m.id === paymentMethod)?.requiresProof && (
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                      <Upload size={16} className="text-brand-accent" />
+                      Upload Payment Proof <span className="text-red-400">*</span>
+                    </h3>
+                    
+                    {!proofPreview ? (
+                      <label className="block">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleProofUpload}
+                          className="sr-only"
+                        />
+                        <div className="border-2 border-dashed border-white/20 rounded-xl p-8 text-center cursor-pointer hover:border-brand-accent/50 transition-colors">
+                          <Upload className="mx-auto mb-3 text-white/40" size={32} />
+                          <p className="text-sm text-white/60 mb-1">Click to upload payment proof</p>
+                          <p className="text-xs text-white/40">JPG, PNG up to 5MB</p>
+                        </div>
+                      </label>
+                    ) : (
+                      <div className="relative">
+                        <img
+                          src={proofPreview}
+                          alt="Payment proof preview"
+                          className="w-full h-48 object-cover rounded-xl border border-white/20"
+                        />
+                        <button
+                          onClick={removeProof}
+                          className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 rounded-full transition-colors"
+                          aria-label="Remove proof"
+                        >
+                          <X size={16} className="text-white" />
+                        </button>
+                        <div className="mt-2 flex items-center gap-2 text-sm text-green-400">
+                          <Check size={16} />
+                          Proof uploaded successfully
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="mt-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                      <p className="text-xs text-yellow-300">
+                        <strong>Instructions:</strong> After making the payment via {PAYMENT_METHODS.find(m => m.id === paymentMethod)?.label}, 
+                        take a screenshot/photo of the receipt and upload it here. Your order will be verified within 24 hours.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </Card>
             </div>
 
@@ -323,11 +481,17 @@ export default function Checkout() {
                 <Button
                   variant="primary"
                   className="w-full"
-                  disabled={!selectedAddress || loading}
+                  disabled={!selectedAddress || loading || (PAYMENT_METHODS.find(m => m.id === paymentMethod)?.requiresProof && !proofFile)}
                   onClick={handlePlaceOrder}
                 >
                   {loading ? 'Placing Order...' : 'Place Order'}
                 </Button>
+
+                {error && (
+                  <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <p className="text-xs text-red-400">{error}</p>
+                  </div>
+                )}
 
                 <p className="text-xs text-white/40 mt-4 text-center">
                   By placing this order, you agree to our Terms of Service

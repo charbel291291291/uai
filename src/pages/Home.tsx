@@ -23,10 +23,10 @@ const PLAN_META  = [
   { img: '/images/plan-elite.webp',  color: '#F59E0B', price: '$10/mo' },
 ];
 const NFC_META   = [
-  { img: '/images/nfc-card.webp',     color: '#3A86FF', name: 'NFC Smart Card', price: '$12.99' },
-  { img: '/images/nfc-keychain.webp', color: '#10B981', name: 'NFC Keychain', price: '$14.99' },
-  { img: '/images/nfc-bracelet.webp', color: '#A855F7', name: 'NFC Bracelet', price: '$22.99' },
-  { img: '/images/nfc-sticker.webp',  color: '#F59E0B', name: 'NFC Sticker Pack', price: '$9.99' },
+  { img: '/images/nfc-card.webp',     color: '#3A86FF', name: 'NFC Smart Card', price: '$12.99', id: 'nfc-card' },
+  { img: '/images/nfc-keychain.webp', color: '#10B981', name: 'NFC Keychain', price: '$14.99', id: 'nfc-keychain' },
+  { img: '/images/nfc-bracelet.webp', color: '#A855F7', name: 'NFC Bracelet', price: '$22.99', id: 'nfc-bracelet' },
+  { img: '/images/nfc-sticker.webp',  color: '#F59E0B', name: 'NFC Sticker Pack', price: '$9.99', id: 'nfc-sticker' },
 ];
 const FEAT_ICONS = [Zap, Globe, Shield, Sparkles];
 
@@ -174,7 +174,7 @@ export default function Home() {
           {NFC_META.map((p, i) => (
             <Link 
               key={i}
-              to="/shop"
+              to={`/checkout?product=${p.id}`}
               className="glass-neon rounded-[22px] sm:rounded-[28px] overflow-hidden group cursor-pointer transition-all duration-200 hover:-translate-y-2 hover:shadow-xl block"
             >
               <div className="relative h-36 sm:h-44 overflow-hidden bg-white/5">
@@ -191,7 +191,7 @@ export default function Home() {
                 <div className="flex items-center justify-between">
                   <span className="text-brand-accent font-bold text-sm">{p.price}</span>
                   <span className="text-white/40 text-xs flex items-center gap-1 group-hover:text-brand-accent transition-colors">
-                    View Details →
+                    Buy Now →
                   </span>
                 </div>
               </div>
