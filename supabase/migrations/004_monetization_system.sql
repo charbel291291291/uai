@@ -173,6 +173,18 @@ ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE webhook_events ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (for idempotent migrations)
+DROP POLICY IF EXISTS "Anyone can view active products" ON products;
+DROP POLICY IF EXISTS "Users can view own orders" ON orders;
+DROP POLICY IF EXISTS "Users can create own orders" ON orders;
+DROP POLICY IF EXISTS "Users can view own order items" ON order_items;
+DROP POLICY IF EXISTS "Anyone can view active plans" ON subscription_plans;
+DROP POLICY IF EXISTS "Users can view own subscriptions" ON subscriptions;
+DROP POLICY IF EXISTS "Users can create own subscriptions" ON subscriptions;
+DROP POLICY IF EXISTS "Users can update own subscriptions" ON subscriptions;
+DROP POLICY IF EXISTS "Users can view own payments" ON payments;
+DROP POLICY IF EXISTS "Service role can manage webhook events" ON webhook_events;
+
 -- Products: Anyone can view active products
 CREATE POLICY "Anyone can view active products"
   ON products FOR SELECT
@@ -229,6 +241,10 @@ CREATE POLICY "Service role can manage webhook events"
 -- ============================================================================
 -- SEED DATA - Sample Products & Plans
 -- ============================================================================
+
+-- Delete existing seed data first (for idempotent migrations)
+DELETE FROM products WHERE name IN ('NFC Smart Card', 'NFC Keychain', 'NFC Bracelet', 'NFC Sticker Pack');
+DELETE FROM subscription_plans WHERE name IN ('Free', 'Pro', 'Premium');
 
 -- Insert sample NFC products
 INSERT INTO products (name, description, price_cents, type, category, image_url, stock_quantity) VALUES

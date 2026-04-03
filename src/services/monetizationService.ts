@@ -21,6 +21,13 @@ export interface Product {
   image_url: string | null;
   is_active: boolean;
   stock_quantity: number | null;
+  // E-commerce extensions
+  cost_cents?: number | null;
+  sku?: string | null;
+  weight_grams?: number | null;
+  dimensions?: Record<string, any> | null;
+  tags?: string[] | null;
+  bundle_discount_percent?: number | null;
 }
 
 export interface SubscriptionPlan {

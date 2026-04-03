@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS payment_methods (
 );
 
 -- Indexes
-CREATE INDEX idx_payment_methods_active ON payment_methods(is_active);
-CREATE INDEX idx_payment_methods_code ON payment_methods(code);
+CREATE INDEX IF NOT EXISTS idx_payment_methods_active ON payment_methods(is_active);
+CREATE INDEX IF NOT EXISTS idx_payment_methods_code ON payment_methods(code);
 
 -- ============================================================================
 -- 3. PAYMENT PROOFS TABLE - MANDATORY proof uploads for local payments
@@ -63,9 +63,9 @@ CREATE TABLE IF NOT EXISTS payment_proofs (
 );
 
 -- Indexes
-CREATE INDEX idx_payment_proofs_order_id ON payment_proofs(order_id);
-CREATE INDEX idx_payment_proofs_status ON payment_proofs(status);
-CREATE INDEX idx_payment_proofs_submitted_by ON payment_proofs(submitted_by);
+CREATE INDEX IF NOT EXISTS idx_payment_proofs_order_id ON payment_proofs(order_id);
+CREATE INDEX IF NOT EXISTS idx_payment_proofs_status ON payment_proofs(status);
+CREATE INDEX IF NOT EXISTS idx_payment_proofs_submitted_by ON payment_proofs(submitted_by);
 
 -- ============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
@@ -74,6 +74,12 @@ CREATE INDEX idx_payment_proofs_submitted_by ON payment_proofs(submitted_by);
 -- Enable RLS on new tables
 ALTER TABLE payment_methods ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_proofs ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist (for idempotent migrations)
+DROP POLICY IF EXISTS "Anyone can view active payment methods" ON payment_methods;
+DROP POLICY IF EXISTS "Users can view own payment proofs" ON payment_proofs;
+DROP POLICY IF EXISTS "Users can create own payment proofs" ON payment_proofs;
+DROP POLICY IF EXISTS "Admins can manage all payment proofs" ON payment_proofs;
 
 -- Payment Methods: Anyone can view active methods
 CREATE POLICY "Anyone can view active payment methods"
@@ -105,20 +111,20 @@ CREATE POLICY "Admins can manage all payment proofs"
 -- SEED DATA - Lebanon Payment Methods
 -- ============================================================================
 
+-- Delete existing payment methods first (for idempotent migrations)
+DELETE FROM payment_methods WHERE code IN ('cod', 'omt', 'wish', 'bank_transfer');
+
+-- Insert payment methods
 INSERT INTO payment_methods (name, code, description, instructions, requires_proof, processing_time, sort_order, metadata) VALUES
-
 ('Cash on Delivery', 'cod', 'Pay when you receive your order', 'Pay cash upon delivery. No online payment required.', false, 'Upon delivery', 1, '{"available_cities": ["Beirut", "Mount Lebanon", "Tripoli", "Sidon", "Tyre"]}'),
-
 ('OMT Payment', 'omt', 'Pay via OMT money transfer', 
  E'Send payment to:\n• Name: [Your Business Name]\n• Phone: +961 XX XXX XXX\n\nAfter sending:\n1. Take photo of receipt\n2. Upload below\n3. Include reference number', 
  true, '1-2 hours', 2, 
  '{"phone": "+96170123456", "recipient_name": "UAi Store"}'),
-
 ('Wish Money', 'wish', 'Pay via Wish Money app', 
  E'Send payment to:\n• Account: [Your Wish Account]\n• Number: +961 XX XXX XXX\n\nAfter sending:\n1. Screenshot the transaction\n2. Upload below\n3. Include reference number', 
  true, '1-2 hours', 3, 
  '{"account": "uaistore@wish.com", "phone": "+96170123456"}'),
-
 ('Bank Transfer', 'bank_transfer', 'Direct bank transfer', 
  E'Transfer to:\n• Bank: [Bank Name]\n• Account: [Account Number]\n• IBAN: [IBAN]\n\nAfter transfer:\n1. Upload receipt/screenshot\n2. Include reference number', 
  true, '1-2 business days', 4, 
