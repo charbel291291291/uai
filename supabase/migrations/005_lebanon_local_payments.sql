@@ -68,6 +68,77 @@ CREATE INDEX IF NOT EXISTS idx_payment_proofs_status ON payment_proofs(status);
 CREATE INDEX IF NOT EXISTS idx_payment_proofs_submitted_by ON payment_proofs(submitted_by);
 
 -- ============================================================================
+-- 4. PAYMENT REQUESTS TABLE - Subscription payment requests (manual review)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS payment_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  plan TEXT NOT NULL CHECK (plan IN ('pro', 'elite')),
+  payment_method TEXT NOT NULL CHECK (payment_method IN ('cod', 'omt', 'wish', 'bank_transfer')),
+  proof_image_url TEXT NOT NULL,
+  amount INTEGER NOT NULL CHECK (amount > 0), -- in cents
+  currency TEXT NOT NULL DEFAULT 'USD',
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  admin_notes TEXT,
+  reviewed_by UUID REFERENCES auth.users(id),
+  reviewed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_payment_requests_user_id ON payment_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_payment_requests_status ON payment_requests(status);
+CREATE INDEX IF NOT EXISTS idx_payment_requests_created_at ON payment_requests(created_at DESC);
+
+-- RLS for payment_requests
+ALTER TABLE payment_requests ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view own payment requests" ON payment_requests;
+DROP POLICY IF EXISTS "Users can create own payment requests" ON payment_requests;
+DROP POLICY IF EXISTS "Admins can view all payment requests" ON payment_requests;
+DROP POLICY IF EXISTS "Admins can update payment requests" ON payment_requests;
+
+-- Users can view their own payment requests
+CREATE POLICY "Users can view own payment requests"
+  ON payment_requests FOR SELECT
+  TO authenticated
+  USING (auth.uid() = user_id);
+
+-- Users can create their own payment requests
+CREATE POLICY "Users can create own payment requests"
+  ON payment_requests FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+-- Admins can view all payment requests (by username or email)
+CREATE POLICY "Admins can view all payment requests"
+  ON payment_requests FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.username IN ('admin', 'eyedeaz')
+    )
+    OR auth.email() = 'albasma12182@gmail.com'
+  );
+
+-- Admins can update payment requests
+CREATE POLICY "Admins can update payment requests"
+  ON payment_requests FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.username IN ('admin', 'eyedeaz')
+    )
+    OR auth.email() = 'albasma12182@gmail.com'
+  );
+
+-- ============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ============================================================================
 
