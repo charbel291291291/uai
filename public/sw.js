@@ -1,5 +1,6 @@
 // ============================================================================
 // SERVICE WORKER FOR CACHING AND OFFLINE SUPPORT
+// SECURITY HARDENED: Never cache sensitive data or authenticated routes
 // ============================================================================
 
 const CACHE_NAME = 'uai-cache-v1';
@@ -12,6 +13,65 @@ const STATIC_ASSETS = [
   '/index.html',
   '/offline.html',
 ];
+
+// ============================================================================
+// SECURITY: Routes and URLs that should NEVER be cached
+// ============================================================================
+
+const SENSITIVE_ROUTES = [
+  '/auth',           // Authentication endpoints
+  '/dashboard',      // User dashboard (authenticated)
+  '/profile',        // User profile data
+  '/admin',          // Admin panel
+  '/settings',       // User settings
+];
+
+const SENSITIVE_PATTERNS = [
+  /\/api\//i,                    // All API calls
+  /\/auth\//i,                   // Auth-related endpoints
+  /supabase/i,                   // Supabase requests
+  /token/i,                      // Token-related requests
+  /session/i,                    // Session-related requests
+  /user\//i,                     // User data endpoints
+];
+
+/**
+ * Check if request should NEVER be cached (security-sensitive)
+ */
+function isSensitiveRequest(request) {
+  const url = new URL(request.url);
+  
+  // Check against sensitive route patterns
+  for (const pattern of SENSITIVE_PATTERNS) {
+    if (pattern.test(url.pathname) || pattern.test(url.href)) {
+      console.log('[Service Worker] 🔒 Sensitive request detected, skipping cache:', url.pathname);
+      return true;
+    }
+  }
+  
+  // Check against sensitive routes list
+  for (const route of SENSITIVE_ROUTES) {
+    if (url.pathname.toLowerCase().startsWith(route.toLowerCase())) {
+      console.log('[Service Worker] 🔒 Sensitive route detected, skipping cache:', url.pathname);
+      return true;
+    }
+  }
+  
+  // Check if request has auth headers (likely contains tokens)
+  const authHeader = request.headers.get('Authorization');
+  if (authHeader) {
+    console.log('[Service Worker] 🔒 Authenticated request, skipping cache:', url.pathname);
+    return true;
+  }
+  
+  // Check if request method is not GET (state-changing)
+  if (request.method !== 'GET') {
+    console.log('[Service Worker] 🔒 Non-GET request, skipping cache:', url.pathname);
+    return true;
+  }
+  
+  return false;
+}
 
 // Network timeout for fetch requests
 const NETWORK_TIMEOUT = 5000;
@@ -85,7 +145,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // API calls - network only
+  // SECURITY CHECK: Skip caching for sensitive routes/APIs
+  if (isSensitiveRequest(request)) {
+    event.respondWith(networkOnly(request));
+    return;
+  }
+  
+  // API calls - network only (already checked above, but explicit for clarity)
   if (url.pathname.startsWith('/api') || url.hostname.includes('supabase')) {
     event.respondWith(networkOnly(request));
     return;
@@ -112,9 +178,15 @@ self.addEventListener('fetch', (event) => {
 // ============================================================================
 
 /**
- * Cache First - Best for static assets
+ * Cache First - Best for NON-SENSITIVE static assets
+ * Includes security check before caching
  */
 async function cacheFirst(request) {
+  // Security check: Never cache sensitive requests
+  if (isSensitiveRequest(request)) {
+    return networkOnly(request);
+  }
+  
   const cachedResponse = await caches.match(request);
   
   if (cachedResponse) {
@@ -129,7 +201,8 @@ async function cacheFirst(request) {
   try {
     const networkResponse = await fetch(request);
     
-    if (networkResponse.ok) {
+    // Only cache if response is OK and not sensitive
+    if (networkResponse.ok && !isSensitiveRequest(request)) {
       const cache = await caches.open(DYNAMIC_CACHE);
       cache.put(request, networkResponse.clone());
     }
@@ -142,13 +215,20 @@ async function cacheFirst(request) {
 }
 
 /**
- * Network First - Best for dynamic content
+ * Network First - Best for dynamic content (NON-SENSITIVE)
+ * Includes security validation before caching
  */
 async function networkFirst(request) {
+  // Security check: Never cache sensitive requests
+  if (isSensitiveRequest(request)) {
+    return networkOnly(request);
+  }
+  
   try {
     const networkResponse = await fetch(request);
     
-    if (networkResponse.ok) {
+    // Only cache non-sensitive, successful responses
+    if (networkResponse.ok && !isSensitiveRequest(request)) {
       const cache = await caches.open(DYNAMIC_CACHE);
       cache.put(request, networkResponse.clone());
     }
@@ -156,6 +236,11 @@ async function networkFirst(request) {
     return networkResponse;
   } catch (error) {
     console.log('[Service Worker] Network failed, trying cache:', request.url);
+    
+    // Don't use cache for sensitive requests
+    if (isSensitiveRequest(request)) {
+      throw error;
+    }
     
     const cachedResponse = await caches.match(request);
     
@@ -173,9 +258,15 @@ async function networkFirst(request) {
 }
 
 /**
- * Network First with Timeout
+ * Network First with Timeout - For HTML pages (NON-SENSITIVE)
+ * Includes security validation
  */
 async function networkFirstWithTimeout(request) {
+  // Security check: Never cache sensitive requests
+  if (isSensitiveRequest(request)) {
+    return networkOnly(request);
+  }
+  
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(() => reject(new Error('Timeout')), NETWORK_TIMEOUT);
   });
@@ -186,7 +277,7 @@ async function networkFirstWithTimeout(request) {
       timeoutPromise,
     ]);
     
-    if (networkResponse.ok) {
+    if (networkResponse.ok && !isSensitiveRequest(request)) {
       const cache = await caches.open(DYNAMIC_CACHE);
       cache.put(request, networkResponse.clone());
     }
@@ -194,6 +285,11 @@ async function networkFirstWithTimeout(request) {
     return networkResponse;
   } catch (error) {
     console.log('[Service Worker] Network timeout, using cache');
+    
+    // Don't use cache for sensitive requests
+    if (isSensitiveRequest(request)) {
+      throw error;
+    }
     
     const cachedResponse = await caches.match(request);
     
@@ -206,14 +302,21 @@ async function networkFirstWithTimeout(request) {
 }
 
 /**
- * Stale While Revalidate - Best for frequently updated resources
+ * Stale While Revalidate - Best for frequently updated resources (NON-SENSITIVE)
+ * Includes security validation
  */
 async function staleWhileRevalidate(request) {
+  // Security check: Never cache sensitive requests
+  if (isSensitiveRequest(request)) {
+    return networkOnly(request);
+  }
+  
   const cache = await caches.open(DYNAMIC_CACHE);
   const cachedResponse = await cache.match(request);
   
   const fetchPromise = fetch(request).then((networkResponse) => {
-    if (networkResponse.ok) {
+    // Only cache non-sensitive, successful responses
+    if (networkResponse.ok && !isSensitiveRequest(request)) {
       cache.put(request, networkResponse.clone());
     }
     return networkResponse;
@@ -223,24 +326,44 @@ async function staleWhileRevalidate(request) {
 }
 
 /**
- * Network Only - For API calls
+ * Network Only - For API calls and sensitive requests
+ * NEVER cache these responses
  */
 async function networkOnly(request) {
   try {
-    return await fetch(request);
+    const response = await fetch(request);
+    
+    // Double-check: Don't cache even if response is successful
+    // This prevents accidental caching of sensitive data
+    return response;
   } catch (error) {
-    console.error('[Service Worker] Network only failed:', error);
-    return new Response(JSON.stringify({ error: 'Network request failed' }), {
-      status: 503,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error('[Service Worker] Network request failed:', error);
+    
+    // Return appropriate error based on request type
+    if (request.headers.get('accept')?.includes('application/json')) {
+      return new Response(JSON.stringify({ 
+        error: 'Network request failed',
+        code: 'NETWORK_ERROR'
+      }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    
+    return new Response('Network error', { status: 503 });
   }
 }
 
 /**
- * Helper: Fetch and cache response
+ * Helper: Fetch and cache response (WITH SECURITY CHECK)
  */
 async function fetchAndCache(request) {
+  // Security check: Never cache sensitive requests
+  if (isSensitiveRequest(request)) {
+    console.log('[Service Worker] 🔒 Background fetch skipped (sensitive):', request.url);
+    return;
+  }
+  
   try {
     const response = await fetch(request);
     

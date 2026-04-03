@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 // ============================================================================
 // TYPES
@@ -13,6 +13,7 @@ export interface AIResponse {
   message: string;
   timestamp: string;
   model?: string;
+  success?: boolean;
 }
 
 export interface ConversationMessage {
@@ -23,7 +24,7 @@ export interface ConversationMessage {
 
 export interface AIError {
   message: string;
-  code: 'API_ERROR' | 'NETWORK_ERROR' | 'TIMEOUT' | 'UNKNOWN';
+  code: 'API_ERROR' | 'NETWORK_ERROR' | 'TIMEOUT' | 'UNKNOWN' | 'SERVER_ERROR';
   originalError?: Error;
 }
 
@@ -31,8 +32,8 @@ export interface AIError {
 // CONFIGURATION
 // ============================================================================
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-const GEMINI_MODEL = 'gemini-pro';
+// API endpoint - calls our secure edge function
+const AI_API_ENDPOINT = '/api/ai/generate';
 const TIMEOUT_MS = 30000;
 
 // ============================================================================
@@ -87,36 +88,55 @@ const getMockResponse = (message: string): string => {
 };
 
 // ============================================================================
-// GEMINI API INTEGRATION
+// SECURE API CALL (No API key in frontend!)
 // ============================================================================
 
-const callGeminiAPI = async (
+const callAIAPI = async (
   message: string,
   conversationHistory?: ConversationMessage[]
 ): Promise<string> => {
-  if (!GEMINI_API_KEY) {
-    console.warn('[AI Service] No API key found, using mock response');
-    return getMockResponse(message);
-  }
-
   try {
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+    // Call our secure edge function
+    const response = await fetch(AI_API_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message,
+        conversationHistory,
+      }),
+    });
 
-    // Build prompt with conversation history if available
-    let prompt = message;
-    if (conversationHistory && conversationHistory.length > 0) {
-      const historyText = conversationHistory
-        .map(msg => `${msg.role}: ${msg.content}`)
-        .join('\n');
-      prompt = `${historyText}\nassistant: ${message}`;
+    const data = await response.json();
+
+    if (!response.ok) {
+      // Handle specific error codes
+      switch (data.code) {
+        case 'TIMEOUT':
+          throw new Error('AI request timed out');
+        case 'INVALID_INPUT':
+          throw new Error(data.error || 'Invalid input');
+        case 'INPUT_TOO_LONG':
+          throw new Error(data.error || 'Message too long');
+        case 'MISSING_API_KEY':
+        case 'INVALID_API_KEY':
+          throw new Error('AI service configuration error');
+        default:
+          throw new Error(data.error || 'AI request failed');
+      }
     }
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    
-    return response.text();
+    if (!data.success || !data.message) {
+      throw new Error('Invalid response from AI service');
+    }
+
+    return data.message;
   } catch (error) {
+    // Network errors
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error - unable to reach AI service');
+    }
     throw error;
   }
 };
@@ -151,7 +171,7 @@ export class AIService {
     try {
       // Call AI API with timeout
       const aiMessage = await Promise.race([
-        callGeminiAPI(message, this.conversationHistory),
+        callAIAPI(message, this.conversationHistory),
         this.createTimeout()
       ]);
 
@@ -162,7 +182,8 @@ export class AIService {
       return {
         message: aiMessage,
         timestamp: new Date().toISOString(),
-        model: GEMINI_MODEL
+        model: 'gemini-pro',
+        success: true,
       };
 
     } catch (error) {
@@ -174,6 +195,12 @@ export class AIService {
         }
         if (error.message.includes('fetch') || error.message.includes('network')) {
           throw AIServiceError.networkError();
+        }
+        if (error.message.includes('AI service')) {
+          throw new AIServiceError(
+            'AI service temporarily unavailable. Please try again later.',
+            'SERVER_ERROR'
+          );
         }
         throw AIServiceError.apiError(error);
       }

@@ -13,20 +13,20 @@ import { SEO } from '../components/SEO';
 
 // ── Static data (images + colors — labels come from i18n) ─────────────────
 const MODE_META  = [
-  { img: '/images/mode-ai.png',      color: '#3A86FF' },
-  { img: '/images/mode-landing.png', color: '#10B981' },
-  { img: '/images/mode-sales.png',   color: '#F59E0B' },
+  { img: '/images/mode-ai.webp',      color: '#3A86FF' },
+  { img: '/images/mode-landing.webp', color: '#10B981' },
+  { img: '/images/mode-sales.webp',   color: '#F59E0B' },
 ];
 const PLAN_META  = [
-  { img: '/images/plan-basic.png',  color: '#A855F7', price: '$15'    },
-  { img: '/images/plan-pro.png',    color: '#00C6FF', price: '$5/mo', popular: true },
-  { img: '/images/plan-elite.png',  color: '#F59E0B', price: '$10/mo' },
+  { img: '/images/plan-basic.webp',  color: '#A855F7', price: '$15'    },
+  { img: '/images/plan-pro.webp',    color: '#00C6FF', price: '$5/mo', popular: true },
+  { img: '/images/plan-elite.webp',  color: '#F59E0B', price: '$10/mo' },
 ];
 const NFC_META   = [
-  { img: '/images/nfc-card.png',     color: '#3A86FF' },
-  { img: '/images/nfc-keychain.png', color: '#10B981' },
-  { img: '/images/nfc-bracelet.png', color: '#A855F7' },
-  { img: '/images/nfc-sticker.png',  color: '#F59E0B' },
+  { img: '/images/nfc-card.webp',     color: '#3A86FF' },
+  { img: '/images/nfc-keychain.webp', color: '#10B981' },
+  { img: '/images/nfc-bracelet.webp', color: '#A855F7' },
+  { img: '/images/nfc-sticker.webp',  color: '#F59E0B' },
 ];
 const FEAT_ICONS = [Zap, Globe, Shield, Sparkles];
 
@@ -189,7 +189,13 @@ export default function Home() {
         {/* How it works */}
         <div className="p-6 sm:p-8 md:p-10 glass-neon rounded-[28px] sm:rounded-[40px] flex flex-col md:flex-row items-center gap-6 sm:gap-8">
           <div className="w-full md:w-64 h-44 sm:h-48 rounded-2xl overflow-hidden shrink-0">
-            <img src="/images/nfc-how.png" alt={tr.nfcHowTitle} className="w-full h-full object-cover" />
+            <img 
+              src="/images/nfc-how.webp" 
+              alt={tr.nfcHowTitle} 
+              loading="lazy" 
+              decoding="async"
+              className="w-full h-full object-cover" 
+            />
           </div>
           <div className="flex-1 text-center md:text-start">
             <h3 className="text-xl sm:text-2xl font-black text-white mb-3">{tr.nfcHowTitle}</h3>
@@ -232,7 +238,13 @@ export default function Home() {
               )}
 
               <div className="relative h-36 sm:h-40 overflow-hidden">
-                <img src={PLAN_META[i].img} alt={plan.name} className="w-full h-full object-cover" />
+                <img 
+                  src={PLAN_META[i].img} 
+                  alt={plan.name} 
+                  loading="lazy" 
+                  decoding="async"
+                  className="w-full h-full object-cover" 
+                />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/70" />
               </div>
 

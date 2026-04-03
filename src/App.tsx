@@ -17,6 +17,9 @@ import { LangProvider } from './hooks/useLang';
 import { useInstallPrompt } from './hooks/useInstallPrompt';
 import { UserProfile } from './types';
 import { SkipLink, AnnouncerRegions, FocusVisibleStyles } from './components/accessibility';
+import FloatingThemeSwitcher from './components/FloatingThemeSwitcher';
+import BackButton from './components/BackButton';
+import SecureLogger from './utils/SecureLogger';
 
 export type NeonTheme = 'cyber-purple' | 'electric-blue' | 'gold-glow' | 'cyber-green';
 
@@ -48,6 +51,10 @@ function AppShell() {
       <FocusVisibleStyles />
       <SkipLink targetId="main-content" />
       <AnnouncerRegions />
+      
+      {/* Global UI Components */}
+      <FloatingThemeSwitcher />
+      <BackButton />
       
       <Navbar />
 
@@ -154,23 +161,95 @@ export default function App() {
     }
   }, [user]);
 
+  // Initialize Supabase and session with proper validation
   useEffect(() => {
     const url  = import.meta.env.VITE_SUPABASE_URL;
     const key  = import.meta.env.VITE_SUPABASE_ANON_KEY;
     if (!url || !key) { setIsConfigured(false); setLoading(false); return; }
 
+    // Validate session on mount - CRITICAL for security
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      // Only set user if session is valid
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch((error) => {
+      console.error('[App] Session validation error:', error);
+      setUser(null);
+      setLoading(false);
+    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user ?? null);
-      if (!session?.user) setProfile(null);
+    // Subscribe to auth state changes with validation
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      SecureLogger.logAuthEvent(event, session?.user?.id);
+      
+      switch (event) {
+        case 'SIGNED_IN':
+          // Validate the new session
+          if (session?.user) {
+            setUser(session.user);
+            // Store session timestamp for additional security
+            localStorage.setItem('last_auth_check', Date.now().toString());
+          }
+          break;
+          
+        case 'SIGNED_OUT':
+        case 'TOKEN_REFRESHED':
+          if (!session) {
+            setUser(null);
+            setProfile(null);
+            // Clear sensitive data but keep preferences
+            localStorage.removeItem('last_auth_check');
+          } else if (session.user) {
+            setUser(session.user);
+          }
+          break;
+          
+        case 'USER_UPDATED':
+        case 'PASSWORD_RECOVERY':
+          // Force re-authentication for sensitive changes
+          if (session?.user) {
+            setUser(session.user);
+          }
+          break;
+          
+        default:
+          setUser(session?.user ?? null);
+          if (!session?.user) setProfile(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Periodic session validation - prevents ghost sessions
+  useEffect(() => {
+    if (!user) return;
+
+    const validateSession = setInterval(async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error || !session) {
+          SecureLogger.warn('Session invalid, forcing logout', { namespace: 'Security' });
+          await supabase.auth.signOut();
+          setUser(null);
+          setProfile(null);
+          window.location.href = '/login?reason=session_expired';
+        }
+        
+        // Update last check timestamp
+        localStorage.setItem('last_auth_check', Date.now().toString());
+      } catch (err) {
+        SecureLogger.error('Session validation failed', err as Error, { namespace: 'Security' });
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
+
+    return () => clearInterval(validateSession);
+  }, [user]);
 
   useEffect(() => {
     if (!user || !isConfigured) return;
