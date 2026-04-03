@@ -21,6 +21,69 @@ CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
 CREATE INDEX IF NOT EXISTS idx_products_tags ON products USING GIN(tags);
 
 -- ============================================================================
+-- 1b. NFC ORDERS TABLE - Legacy NFC order tracking (for backward compatibility)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS nfc_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  product_type TEXT NOT NULL CHECK (product_type IN ('card', 'keychain', 'bracelet', 'sticker')),
+  quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+  shipping_address JSONB NOT NULL, -- {fullName, street, city, state, zipCode, country, phone}
+  total_amount INTEGER NOT NULL, -- in cents
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled')),
+  tracking_number TEXT,
+  carrier TEXT,
+  admin_notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  delivered_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_nfc_orders_user_id ON nfc_orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_nfc_orders_status ON nfc_orders(status);
+CREATE INDEX IF NOT EXISTS idx_nfc_orders_created_at ON nfc_orders(created_at DESC);
+
+-- RLS Policies for nfc_orders
+ALTER TABLE nfc_orders ENABLE ROW LEVEL SECURITY;
+
+-- Users can view their own orders
+CREATE POLICY "Users can view own orders"
+  ON nfc_orders FOR SELECT
+  TO authenticated
+  USING (auth.uid() = user_id);
+
+-- Users can create their own orders
+CREATE POLICY "Users can create own orders"
+  ON nfc_orders FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+-- Admins can view all orders
+CREATE POLICY "Admins can view all orders"
+  ON nfc_orders FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND (profiles.username IN ('admin', 'eyedeaz') OR profiles.email = 'albasma12182@gmail.com')
+    )
+  );
+
+-- Admins can update all orders
+CREATE POLICY "Admins can update all orders"
+  ON nfc_orders FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND (profiles.username IN ('admin', 'eyedeaz') OR profiles.email = 'albasma12182@gmail.com')
+    )
+  );
+
+-- ============================================================================
 -- 2. CART ITEMS TABLE - User shopping carts
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS cart_items (
