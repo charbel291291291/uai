@@ -136,6 +136,8 @@ export const productService = {
    */
   async getProductById(id: string): Promise<{ data: Product | null; error: any }> {
     try {
+      console.log('[ProductService] Looking for product with ID/slug:', id);
+      
       // First try to fetch by UUID (id column)
       let { data, error } = await supabase
         .from('products')
@@ -143,21 +145,41 @@ export const productService = {
         .eq('id', id)
         .maybeSingle();
 
+      console.log('[ProductService] UUID lookup result:', data ? 'Found' : 'Not found');
+
       // If not found by UUID, try fetching by SKU
       if (!data && !error) {
-        // Convert slug format (nfc-card) to SKU format (NFC-CARD-001)
-        const skuPattern = id.toUpperCase().replace(/-/g, '-');
+        // Convert slug format (nfc-card) to uppercase for SKU matching
+        const upperId = id.toUpperCase();
         
-        const { data: skuData, error: skuError } = await supabase
+        console.log('[ProductService] Trying SKU pattern match with:', upperId);
+        
+        // Try exact SKU match first (e.g., nfc-card-001 -> NFC-CARD-001)
+        const { data: exactSkuData } = await supabase
           .from('products')
           .select('*')
-          .ilike('sku', `${skuPattern}%`)  // Match SKU that starts with pattern
+          .eq('sku', upperId)
           .maybeSingle();
         
-        data = skuData;
-        error = skuError;
+        if (exactSkuData) {
+          console.log('[ProductService] Found by exact SKU match');
+          return { data: exactSkuData, error: null };
+        }
+        
+        // Try pattern match (e.g., nfc-card -> NFC-CARD%)
+        const { data: patternData, error: patternError } = await supabase
+          .from('products')
+          .select('*')
+          .ilike('sku', `${upperId}%`)
+          .maybeSingle();
+        
+        console.log('[ProductService] Pattern match result:', patternData ? 'Found' : 'Not found');
+        
+        data = patternData;
+        error = patternError;
       }
 
+      console.log('[ProductService] Final result:', data ? `Found: ${data.name}` : 'Not found');
       return { data, error };
     } catch (error) {
       console.error('[ProductService] Error fetching product:', error);
