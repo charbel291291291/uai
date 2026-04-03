@@ -15,6 +15,7 @@ import { Badge } from '../components/ui/Badge';
 import { Input } from '../components/ui/Input';
 import { SEO } from '../components/SEO';
 import type { NFCOrder } from '../types';
+import { isAdmin, ADMIN_ROUTES } from '../config/admin';
 
 const STATUS_CONFIG = {
   pending: { label: 'Pending', color: 'yellow', icon: Clock },
@@ -50,10 +51,10 @@ export default function AdminNFC() {
     fetchOrders(filter === 'all' ? undefined : filter);
   }, [filter, fetchOrders]);
 
-  // Check if user is admin
-  const isAdmin = profile?.username === 'admin' || profile?.username === 'eyedeaz';
+  // Check if user is admin using centralized config
+  const userIsAdmin = isAdmin(profile?.username);
 
-  if (!isAdmin) {
+  if (!userIsAdmin) {
     return (
       <div className="min-h-screen pt-24 px-4 flex items-center justify-center">
         <Card className="p-8 text-center max-w-md">

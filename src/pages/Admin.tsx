@@ -4,7 +4,8 @@ import { motion } from 'motion/react';
 import {
   Check, X, Clock, ExternalLink, RefreshCw, Loader2,
   Shield, Users, DollarSign, TrendingUp, Search, Filter,
-  Image as ImageIcon, MessageSquare, AlertCircle, Package, ArrowLeft
+  Image as ImageIcon, MessageSquare, AlertCircle, Package, ArrowLeft,
+  LayoutDashboard
 } from 'lucide-react';
 import { useAuth } from '../App';
 import { useAdminPayments } from '../hooks/useSubscription';
@@ -14,6 +15,7 @@ import { Badge } from '../components/ui/Badge';
 import { Input } from '../components/ui/Input';
 import { SEO } from '../components/SEO';
 import type { PaymentRequest } from '../types';
+import { isAdmin, ADMIN_ROUTES } from '../config/admin';
 
 interface PaymentWithUser extends PaymentRequest {
   user?: {
@@ -44,10 +46,10 @@ export default function Admin() {
     fetchPendingPayments();
   }, [fetchPendingPayments]);
 
-  // Check if user is admin (you should implement proper admin check)
-  const isAdmin = profile?.username === 'admin' || profile?.username === 'eyedeaz';
+  // Check if user is admin using centralized config
+  const userIsAdmin = isAdmin(profile?.username);
 
-  if (!isAdmin) {
+  if (!userIsAdmin) {
     return (
       <div className="min-h-screen pt-24 px-4 flex items-center justify-center">
         <Card className="p-8 text-center max-w-md">
@@ -191,6 +193,51 @@ export default function Admin() {
               </div>
             </div>
           </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Link to={ADMIN_ROUTES.NFC_ORDERS}>
+            <Card className="p-6 cursor-pointer hover:border-brand-accent/50 transition-all group">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                  <Package className="text-blue-400" size={24} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">Manage NFC Orders</h3>
+                  <p className="text-sm text-white/50">Track and update deliveries</p>
+                </div>
+              </div>
+            </Card>
+          </Link>
+
+          <Link to="/shop">
+            <Card className="p-6 cursor-pointer hover:border-brand-accent/50 transition-all group">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                  <TrendingUp className="text-green-400" size={24} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">View Shop</h3>
+                  <p className="text-sm text-white/50">Browse products</p>
+                </div>
+              </div>
+            </Card>
+          </Link>
+
+          <Link to="/dashboard">
+            <Card className="p-6 cursor-pointer hover:border-brand-accent/50 transition-all group">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
+                  <LayoutDashboard className="text-purple-400" size={24} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">User Dashboard</h3>
+                  <p className="text-sm text-white/50">View as regular user</p>
+                </div>
+              </div>
+            </Card>
+          </Link>
         </div>
 
         {/* Filters */}
