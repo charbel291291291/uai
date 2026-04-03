@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { supabase } from '../supabase';
 import { motion, AnimatePresence } from 'motion/react';
-import { LogOut, User, LayoutDashboard, Globe, ChevronRight, Crown, Zap, type LucideProps } from 'lucide-react';
+import { LogOut, User, LayoutDashboard, Globe, ChevronRight, Crown, Zap, ShoppingCart, type LucideProps } from 'lucide-react';
 import { NEON_THEMES } from '../constants';
 import { useLang } from '../hooks/useLang';
 import { useSubscription } from '../hooks/useSubscription';
@@ -132,6 +132,12 @@ export default function Navbar() {
             <>
               {/* Notifications */}
               <Notifications />
+
+              <Link to="/shop"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 transition-colors text-sm font-medium text-white/50 hover:text-white">
+                <ShoppingCart size={14} className="text-brand-accent" />
+                Shop
+              </Link>
 
               <Link to="/dashboard"
                 className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 transition-colors text-sm font-medium text-white/50 hover:text-white">

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Compass, LayoutDashboard, User, LogIn } from 'lucide-react';
+import { Home, Compass, LayoutDashboard, User, LogIn, ShoppingCart } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useLang } from '../hooks/useLang';
 import { useAuth } from '../App';
@@ -13,6 +13,7 @@ export default function BottomNav() {
     ? [
         { to: '/',           icon: Home,            label: t('bottomNav.home') },
         { to: '/explore',    icon: Compass,         label: t('bottomNav.explore') },
+        { to: '/shop',       icon: ShoppingCart,    label: 'Shop' },
         { to: '/dashboard',  icon: LayoutDashboard, label: t('bottomNav.dashboard') },
         { to: profile?.username ? `/${profile.username}` : '/dashboard',
           icon: User, label: t('bottomNav.profile') },
