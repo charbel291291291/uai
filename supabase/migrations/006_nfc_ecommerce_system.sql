@@ -47,6 +47,12 @@ CREATE INDEX IF NOT EXISTS idx_nfc_orders_created_at ON nfc_orders(created_at DE
 -- RLS Policies for nfc_orders
 ALTER TABLE nfc_orders ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (for re-running migration)
+DROP POLICY IF EXISTS "Users can view own orders" ON nfc_orders;
+DROP POLICY IF EXISTS "Users can create own orders" ON nfc_orders;
+DROP POLICY IF EXISTS "Admins can view all orders" ON nfc_orders;
+DROP POLICY IF EXISTS "Admins can update all orders" ON nfc_orders;
+
 -- Users can view their own orders
 CREATE POLICY "Users can view own orders"
   ON nfc_orders FOR SELECT
