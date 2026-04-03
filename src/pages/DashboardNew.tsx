@@ -9,7 +9,7 @@ import {
   User, Link as LinkIcon, Sparkles, Plus, Trash2, Save,
   LayoutDashboard, MessageSquare, Star, BarChart3, Users,
   Settings, ChevronRight, ExternalLink, CheckCircle2,
-  AlertCircle, Eye, TrendingUp, Zap, Crown, Lock, ArrowLeft,
+  AlertCircle, Eye, TrendingUp, Zap, Crown, Lock,
   Shield, Package, DollarSign
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -242,14 +242,6 @@ export default function Dashboard() {
       {/* ─── Sidebar ─────────────────────────────────────────────────────────── */}
       <aside className="w-64 fixed left-0 top-0 h-screen border-r border-white/5 bg-[#020617]/80 backdrop-blur-xl hidden lg:block">
         <div className="p-6">
-          {/* ── Back to Home Button ── */}
-          <Link to="/"
-            className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-white/5 text-white/70 hover:text-white hover:bg-white/10 transition-all text-sm font-medium border border-white/10 hover:border-white/20"
-            aria-label="Back to home">
-            <ArrowLeft size={16} />
-            Back to Home
-          </Link>
-
           <Link to="/" className="flex items-center gap-2 mb-8">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00C6FF] to-[#3A86FF] flex items-center justify-center">
               <Zap size={18} className="text-black" />
