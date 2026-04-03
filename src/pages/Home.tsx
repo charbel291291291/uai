@@ -23,10 +23,10 @@ const PLAN_META  = [
   { img: '/images/plan-elite.webp',  color: '#F59E0B', price: '$10/mo' },
 ];
 const NFC_META   = [
-  { img: '/images/nfc-card.webp',     color: '#3A86FF' },
-  { img: '/images/nfc-keychain.webp', color: '#10B981' },
-  { img: '/images/nfc-bracelet.webp', color: '#A855F7' },
-  { img: '/images/nfc-sticker.webp',  color: '#F59E0B' },
+  { img: '/images/nfc-card.webp',     color: '#3A86FF', name: 'NFC Smart Card', price: '$12.99' },
+  { img: '/images/nfc-keychain.webp', color: '#10B981', name: 'NFC Keychain', price: '$14.99' },
+  { img: '/images/nfc-bracelet.webp', color: '#A855F7', name: 'NFC Bracelet', price: '$22.99' },
+  { img: '/images/nfc-sticker.webp',  color: '#F59E0B', name: 'NFC Sticker Pack', price: '$9.99' },
 ];
 const FEAT_ICONS = [Zap, Globe, Shield, Sparkles];
 
@@ -172,17 +172,30 @@ export default function Home() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5 mb-8 sm:mb-10">
           {NFC_META.map((p, i) => (
-            <div key={i}
-              className="glass-neon rounded-[22px] sm:rounded-[28px] overflow-hidden group cursor-pointer transition-transform duration-200 hover:-translate-y-2">
+            <Link 
+              key={i}
+              to="/shop"
+              className="glass-neon rounded-[22px] sm:rounded-[28px] overflow-hidden group cursor-pointer transition-all duration-200 hover:-translate-y-2 hover:shadow-xl block"
+            >
               <div className="relative h-36 sm:h-44 overflow-hidden bg-white/5">
-                <img src={p.img} alt={tr.nfcItems[i]} loading="lazy" decoding="async"
+                <img src={p.img} alt={p.name} loading="lazy" decoding="async"
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                {/* Price Badge */}
+                <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-brand-accent text-black text-xs font-black">
+                  {p.price}
+                </div>
               </div>
-              <div className="p-4 sm:p-5 text-center">
-                <h3 className="font-black text-white text-xs sm:text-sm mb-1">{tr.nfcItems[i]}</h3>
+              <div className="p-4 sm:p-5">
+                <h3 className="font-black text-white text-xs sm:text-sm mb-2">{p.name}</h3>
+                <div className="flex items-center justify-between">
+                  <span className="text-brand-accent font-bold text-sm">{p.price}</span>
+                  <span className="text-white/40 text-xs flex items-center gap-1 group-hover:text-brand-accent transition-colors">
+                    View Details →
+                  </span>
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 
@@ -200,7 +213,7 @@ export default function Home() {
           <div className="flex-1 text-center md:text-start">
             <h3 className="text-xl sm:text-2xl font-black text-white mb-3">{tr.nfcHowTitle}</h3>
             <p className="text-white/45 leading-relaxed mb-5 sm:mb-6 text-sm sm:text-base">{tr.nfcHowDesc}</p>
-            <Link to="/login"
+            <Link to="/shop"
               className="btn-neon text-black font-black inline-flex items-center gap-2 text-sm sm:text-base py-3 px-6">
               {tr.nfcOrderBtn} {Arrow}
             </Link>

@@ -11,6 +11,7 @@ import Upgrade from './pages/Upgrade';
 import Admin from './pages/Admin';
 import AdminNFC from './pages/AdminNFC';
 import Shop from './pages/Shop';
+import Checkout from './pages/Checkout';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import InstallBanner from './components/InstallBanner';
@@ -74,6 +75,14 @@ function AppShell() {
           <Route path="/explore"   element={<Explore />} />
           <Route path="/login"     element={<Login />} />
           <Route path="/shop"      element={<Shop />} />
+          <Route
+            path="/checkout"
+            element={
+              <AuthGate>
+                <Checkout />
+              </AuthGate>
+            }
+          />
           <Route
             path="/dashboard"
             element={

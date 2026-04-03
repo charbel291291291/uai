@@ -4,6 +4,7 @@ import { ShoppingCart, Loader2 } from 'lucide-react';
 import { productService, type Product } from '../services/monetizationService';
 import { cartService } from '../services/ecommerceService';
 import ProductCard from '../components/ProductCard';
+import CartDrawer from '../components/CartDrawer';
 import { SEO } from '../components/SEO';
 import { useAuth } from '../App';
 import { Link } from 'react-router-dom';
@@ -15,6 +16,7 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [addingToCart, setAddingToCart] = useState<string | null>(null);
   const [addedProducts, setAddedProducts] = useState<Set<string>>(new Set());
+  const [cartOpen, setCartOpen] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -111,33 +113,48 @@ export default function Shop() {
 
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-neon text-brand-accent text-sm font-bold mb-6"
-            >
-              <ShoppingCart size={16} />
-              UAi Store
-            </motion.div>
+          <div className="flex items-center justify-between mb-12">
+            <div className="text-center flex-1">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-neon text-brand-accent text-sm font-bold mb-6"
+              >
+                <ShoppingCart size={16} />
+                UAi Store
+              </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-4xl sm:text-5xl font-black text-white mb-4"
-            >
-              NFC <span className="text-gradient">Products</span>
-            </motion.h1>
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-4xl sm:text-5xl font-black text-white mb-4"
+              >
+                NFC <span className="text-gradient">Products</span>
+              </motion.h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-white/50 max-w-xl mx-auto"
-            >
-              Enhance your digital twin experience with our premium NFC products
-            </motion.p>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-white/50 max-w-xl mx-auto"
+              >
+                Enhance your digital twin experience with our premium NFC products
+              </motion.p>
+            </div>
+
+            {/* Cart Button */}
+            {user && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={() => setCartOpen(true)}
+                className="relative p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10"
+                aria-label="Open cart"
+              >
+                <ShoppingCart className="w-6 h-6 text-white" />
+              </motion.button>
+            )}
           </div>
 
           {/* Products Grid */}
@@ -160,6 +177,13 @@ export default function Shop() {
           )}
         </div>
       </div>
+
+      {/* Cart Drawer */}
+      <CartDrawer
+        isOpen={cartOpen}
+        onClose={() => setCartOpen(false)}
+        userId={user?.id}
+      />
     </>
   );
 }
