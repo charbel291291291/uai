@@ -67,8 +67,9 @@ CREATE POLICY "Admins can view all orders"
     EXISTS (
       SELECT 1 FROM profiles
       WHERE profiles.id = auth.uid()
-      AND (profiles.username IN ('admin', 'eyedeaz') OR profiles.email = 'albasma12182@gmail.com')
+      AND profiles.username IN ('admin', 'eyedeaz')
     )
+    OR auth.email() = 'albasma12182@gmail.com'
   );
 
 -- Admins can update all orders
@@ -79,8 +80,9 @@ CREATE POLICY "Admins can update all orders"
     EXISTS (
       SELECT 1 FROM profiles
       WHERE profiles.id = auth.uid()
-      AND (profiles.username IN ('admin', 'eyedeaz') OR profiles.email = 'albasma12182@gmail.com')
+      AND profiles.username IN ('admin', 'eyedeaz')
     )
+    OR auth.email() = 'albasma12182@gmail.com'
   );
 
 -- ============================================================================
