@@ -133,9 +133,26 @@ export default function App() {
   const [theme, setThemeState] = useState<NeonTheme>('electric-blue');
 
   const setTheme = (newTheme: NeonTheme) => {
+    // Save to localStorage for persistence
+    localStorage.setItem('theme', newTheme);
     setThemeState(newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
   };
+
+  // Initialize theme from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') || 'electric-blue';
+    setThemeState(savedTheme as NeonTheme);
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
+
+  // Re-apply theme after user login to ensure it persists
+  useEffect(() => {
+    if (user) {
+      const savedTheme = localStorage.getItem('theme') || 'electric-blue';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+  }, [user]);
 
   useEffect(() => {
     const url  = import.meta.env.VITE_SUPABASE_URL;
