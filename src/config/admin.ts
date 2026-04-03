@@ -17,11 +17,36 @@ export const ADMIN_USERNAMES = [
 ];
 
 /**
+ * List of admin emails who can access admin panels
+ * Add or remove emails as needed
+ */
+export const ADMIN_EMAILS = [
+  'albasma12182@gmail.com',
+  // Add more admin emails here
+  // 'another@email.com',
+];
+
+/**
  * Check if a username has admin privileges
  */
 export function isAdmin(username: string | null | undefined): boolean {
   if (!username) return false;
   return ADMIN_USERNAMES.includes(username.toLowerCase());
+}
+
+/**
+ * Check if an email has admin privileges
+ */
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return ADMIN_EMAILS.includes(email.toLowerCase());
+}
+
+/**
+ * Check if user is admin (by username OR email)
+ */
+export function checkIsAdmin(username: string | null | undefined, email: string | null | undefined): boolean {
+  return isAdmin(username) || isAdminEmail(email);
 }
 
 /**

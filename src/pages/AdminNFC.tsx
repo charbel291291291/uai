@@ -15,7 +15,7 @@ import { Badge } from '../components/ui/Badge';
 import { Input } from '../components/ui/Input';
 import { SEO } from '../components/SEO';
 import type { NFCOrder } from '../types';
-import { isAdmin, ADMIN_ROUTES } from '../config/admin';
+import { isAdmin, ADMIN_ROUTES, checkIsAdmin } from '../config/admin';
 
 const STATUS_CONFIG = {
   pending: { label: 'Pending', color: 'yellow', icon: Clock },
@@ -33,7 +33,7 @@ const PRODUCT_LABELS: Record<string, string> = {
 };
 
 export default function AdminNFC() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const { orders, loading, error, fetchOrders, updateOrderStatus } = useNFCOrdersAdmin();
 
   const [selectedOrder, setSelectedOrder] = useState<NFCOrder | null>(null);
@@ -51,8 +51,8 @@ export default function AdminNFC() {
     fetchOrders(filter === 'all' ? undefined : filter);
   }, [filter, fetchOrders]);
 
-  // Check if user is admin using centralized config
-  const userIsAdmin = isAdmin(profile?.username);
+  // Check if user is admin using centralized config (by username OR email)
+  const userIsAdmin = checkIsAdmin(profile?.username, user?.email);
 
   if (!userIsAdmin) {
     return (

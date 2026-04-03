@@ -17,7 +17,7 @@ import { Card, StatCard } from '../components/ui/Card';
 import { Input, TextArea } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { SEO } from '../components/SEO';
-import { isAdmin, ADMIN_ROUTES } from '../config/admin';
+import { isAdmin, ADMIN_ROUTES, checkIsAdmin } from '../config/admin';
 
 // ─── Sidebar Navigation ─────────────────────────────────────────────────────
 const sidebarItems = [
@@ -505,7 +505,7 @@ export default function Dashboard() {
                 </Card>
 
                 {/* Admin Panel Links (Only for admins) */}
-                {isAdmin(authProfile?.username) && (
+                {checkIsAdmin(authProfile?.username, user?.email) && (
                   <Card className="border-brand-accent/30 bg-gradient-to-r from-brand-accent/5 to-purple-500/5">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-lg bg-brand-accent/20 flex items-center justify-center">
