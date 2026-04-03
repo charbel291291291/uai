@@ -132,15 +132,31 @@ export const productService = {
   },
 
   /**
-   * Get single product by ID
+   * Get single product by ID or SKU
    */
   async getProductById(id: string): Promise<{ data: Product | null; error: any }> {
     try {
-      const { data, error } = await supabase
+      // First try to fetch by UUID (id column)
+      let { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
+
+      // If not found by UUID, try fetching by SKU
+      if (!data && !error) {
+        // Convert slug format (nfc-card) to SKU format (NFC-CARD-001)
+        const skuPattern = id.toUpperCase().replace(/-/g, '-');
+        
+        const { data: skuData, error: skuError } = await supabase
+          .from('products')
+          .select('*')
+          .ilike('sku', `${skuPattern}%`)  // Match SKU that starts with pattern
+          .maybeSingle();
+        
+        data = skuData;
+        error = skuError;
+      }
 
       return { data, error };
     } catch (error) {
