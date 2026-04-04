@@ -481,7 +481,7 @@ export default function Checkout() {
                 <Button
                   variant="primary"
                   className="w-full"
-                  disabled={!selectedAddress || loading || (PAYMENT_METHODS.find(m => m.id === paymentMethod)?.requiresProof && !proofFile)}
+                  disabled={loading || (PAYMENT_METHODS.find(m => m.id === paymentMethod)?.requiresProof && !proofFile)}
                   onClick={handlePlaceOrder}
                 >
                   {loading ? 'Placing Order...' : 'Place Order'}
