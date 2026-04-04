@@ -156,15 +156,27 @@ export const productService = {
       // Not found by UUID, try fetching by SKU
       console.log('[ProductService] UUID not found, trying SKU match...');
       
-      // Convert slug format (nfc-keychain) to uppercase for SKU matching
+      // Convert slug format (nfc-keychain) to uppercase
       const upperId = id.toUpperCase();
       console.log('[ProductService] Trying SKU pattern match with:', upperId);
       
-      // Try pattern match (e.g., nfc-keychain -> NFC-KEYCHAIN%)
+      // Extract product type from slug (e.g., "nfc-keychain" -> "NFC-KEY")
+      // Map common slugs to SKU prefixes
+      const slugToSkuPrefix: Record<string, string> = {
+        'NFC-CARD': 'NFC-CARD',
+        'NFC-KEYCHAIN': 'NFC-KEY',
+        'NFC-BRACELET': 'NFC-BRAC',
+        'NFC-STICKER': 'NFC-STICK',
+      };
+      
+      const skuPrefix = slugToSkuPrefix[upperId] || upperId;
+      console.log('[ProductService] Using SKU prefix:', skuPrefix);
+      
+      // Try pattern match with prefix (e.g., NFC-KEY%)
       const { data: skuData, error: skuError } = await supabase
         .from('products')
         .select('*')
-        .ilike('sku', `${upperId}%`)
+        .ilike('sku', `${skuPrefix}%`)
         .maybeSingle();
       
       console.log('[ProductService] SKU pattern match - data:', skuData ? `Found: ${skuData.name}` : 'null', 'error:', skuError?.message || 'none');
