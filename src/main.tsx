@@ -7,9 +7,9 @@ import './index.css';
 // ── Register Service Worker ──────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js', { scope: '/' })
-      .catch((err) => console.warn('SW registration failed:', err));
+    navigator.serviceWorker.getRegistrations()
+      .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+      .catch((err) => console.warn('SW unregister failed:', err));
   });
 }
 

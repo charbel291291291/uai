@@ -87,7 +87,7 @@ class ProfileService {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -106,7 +106,7 @@ class ProfileService {
         .from('profiles')
         .select('*')
         .eq('username', username.toLowerCase())
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

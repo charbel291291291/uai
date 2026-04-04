@@ -21,6 +21,12 @@ export interface CartItem {
   product?: Product;
 }
 
+interface LocalCartEntry {
+  product_id: string;
+  quantity: number;
+  added_at: string;
+}
+
 export interface Address {
   id: string;
   user_id: string;
@@ -61,25 +67,126 @@ export interface OrderStatusHistory {
   created_at: string;
 }
 
+const LOCAL_CART_KEY = 'cart';
+
+const isBrowser = () => typeof window !== 'undefined';
+
+const getStoredLocalCart = (): LocalCartEntry[] => {
+  if (!isBrowser()) return [];
+
+  try {
+    const raw = window.localStorage.getItem(LOCAL_CART_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is LocalCartEntry =>
+          Boolean(item && typeof item.product_id === 'string' && typeof item.quantity === 'number')
+        )
+      : [];
+  } catch (error) {
+    console.error('[CartService] Error reading local cart:', error);
+    return [];
+  }
+};
+
+const saveStoredLocalCart = (items: LocalCartEntry[]) => {
+  if (!isBrowser()) return;
+
+  window.localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(items));
+  window.dispatchEvent(new CustomEvent('cart-updated'));
+};
+
+const clearStoredLocalCart = () => {
+  if (!isBrowser()) return;
+
+  window.localStorage.removeItem(LOCAL_CART_KEY);
+  window.dispatchEvent(new CustomEvent('cart-updated'));
+};
+
+const resolveCartUserId = async (userId?: string): Promise<string | null> => {
+  if (userId) return userId;
+
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+};
+
 // ============================================================================
 // CART SERVICE
 // ============================================================================
 
 export const cartService = {
+  getLocalCart() {
+    return getStoredLocalCart();
+  },
+
+  async syncCartAfterLogin(userId?: string): Promise<{ error: any }> {
+    try {
+      const resolvedUserId = await resolveCartUserId(userId);
+      const localCart = getStoredLocalCart();
+
+      if (!resolvedUserId || localCart.length === 0) {
+        return { error: null };
+      }
+
+      for (const item of localCart) {
+        const { error } = await this.addToCart(resolvedUserId, item.product_id, item.quantity);
+        if (error) {
+          return { error };
+        }
+      }
+
+      clearStoredLocalCart();
+      return { error: null };
+    } catch (error) {
+      console.error('[CartService] Error syncing local cart:', error);
+      return { error };
+    }
+  },
+
   /**
    * Add product to cart (or update quantity if exists)
    */
   async addToCart(
-    userId: string,
+    userId: string | undefined,
     productId: string,
     quantity: number = 1
   ): Promise<{ data: CartItem | null; error: any }> {
     try {
+      const resolvedUserId = await resolveCartUserId(userId);
+
+      if (!resolvedUserId) {
+        const cart = getStoredLocalCart();
+        const existing = cart.find((item) => item.product_id === productId);
+
+        if (existing) {
+          existing.quantity += quantity;
+        } else {
+          cart.push({
+            product_id: productId,
+            quantity,
+            added_at: new Date().toISOString(),
+          });
+        }
+
+        saveStoredLocalCart(cart);
+
+        return {
+          data: {
+            id: productId,
+            user_id: 'guest',
+            product_id: productId,
+            quantity: existing?.quantity ?? quantity,
+            added_at: existing?.added_at ?? new Date().toISOString(),
+          },
+          error: null,
+        };
+      }
+
       // Check if product already in cart
       const { data: existing } = await supabase
         .from('cart_items')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', resolvedUserId)
         .eq('product_id', productId)
         .maybeSingle();
 
@@ -95,18 +202,26 @@ export const cartService = {
           .select('*, product:products(*)')
           .single();
 
+        if (!error && isBrowser()) {
+          window.dispatchEvent(new CustomEvent('cart-updated'));
+        }
+
         return { data, error };
       } else {
         // Add new item
         const { data, error } = await supabase
           .from('cart_items')
           .insert({
-            user_id: userId,
+            user_id: resolvedUserId,
             product_id: productId,
             quantity,
           })
           .select('*, product:products(*)')
           .single();
+
+        if (!error && isBrowser()) {
+          window.dispatchEvent(new CustomEvent('cart-updated'));
+        }
 
         return { data, error };
       }
@@ -116,15 +231,50 @@ export const cartService = {
     }
   },
 
-  /**
-   * Get user's cart with products
-   */
-  async getCart(userId: string): Promise<{ data: CartItem[] | null; error: any }> {
+   /**
+    * Get user's cart with products
+    */
+  async getCart(userId?: string): Promise<{ data: CartItem[] | null; error: any }> {
     try {
+      const resolvedUserId = await resolveCartUserId(userId);
+
+      if (!resolvedUserId) {
+        const localCart = getStoredLocalCart();
+
+        if (localCart.length === 0) {
+          return { data: [], error: null };
+        }
+
+        const productIds = [...new Set(localCart.map((item) => item.product_id))];
+        const { data: products, error } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', productIds)
+          .eq('is_active', true);
+
+        if (error) {
+          return { data: null, error };
+        }
+
+        const productMap = new Map((products || []).map((product) => [product.id, product]));
+        const data = localCart
+          .map((item) => ({
+            id: item.product_id,
+            user_id: 'guest',
+            product_id: item.product_id,
+            quantity: item.quantity,
+            added_at: item.added_at,
+            product: productMap.get(item.product_id),
+          }))
+          .filter((item) => item.product);
+
+        return { data, error: null };
+      }
+
       const { data, error } = await supabase
         .from('cart_items')
         .select('*, product:products(*)')
-        .eq('user_id', userId)
+        .eq('user_id', resolvedUserId)
         .order('added_at', { ascending: false });
 
       return { data, error };
@@ -139,13 +289,39 @@ export const cartService = {
    */
   async updateQuantity(
     cartItemId: string,
-    quantity: number
+    quantity: number,
+    userId?: string
   ): Promise<{ data: CartItem | null; error: any }> {
     try {
       if (quantity <= 0) {
         // Remove item if quantity is 0
-        const result = await this.removeFromCart(cartItemId);
+        const result = await this.removeFromCart(cartItemId, userId);
         return { data: null, error: result.error };
+      }
+
+      const resolvedUserId = await resolveCartUserId(userId);
+
+      if (!resolvedUserId) {
+        const cart = getStoredLocalCart();
+        const item = cart.find((entry) => entry.product_id === cartItemId);
+
+        if (!item) {
+          return { data: null, error: null };
+        }
+
+        item.quantity = quantity;
+        saveStoredLocalCart(cart);
+
+        return {
+          data: {
+            id: item.product_id,
+            user_id: 'guest',
+            product_id: item.product_id,
+            quantity: item.quantity,
+            added_at: item.added_at,
+          },
+          error: null,
+        };
       }
 
       const { data, error } = await supabase
@@ -158,6 +334,10 @@ export const cartService = {
         .select('*, product:products(*)')
         .single();
 
+      if (!error && isBrowser()) {
+        window.dispatchEvent(new CustomEvent('cart-updated'));
+      }
+
       return { data, error };
     } catch (error) {
       console.error('[CartService] Error updating quantity:', error);
@@ -165,15 +345,27 @@ export const cartService = {
     }
   },
 
-  /**
-   * Remove item from cart
-   */
-  async removeFromCart(cartItemId: string): Promise<{ error: any }> {
+   /**
+    * Remove item from cart
+    */
+  async removeFromCart(cartItemId: string, userId?: string): Promise<{ error: any }> {
     try {
+      const resolvedUserId = await resolveCartUserId(userId);
+
+      if (!resolvedUserId) {
+        const nextCart = getStoredLocalCart().filter((item) => item.product_id !== cartItemId);
+        saveStoredLocalCart(nextCart);
+        return { error: null };
+      }
+
       const { error } = await supabase
         .from('cart_items')
         .delete()
         .eq('id', cartItemId);
+
+      if (!error && isBrowser()) {
+        window.dispatchEvent(new CustomEvent('cart-updated'));
+      }
 
       return { error };
     } catch (error) {
@@ -182,15 +374,26 @@ export const cartService = {
     }
   },
 
-  /**
-   * Clear entire cart
-   */
-  async clearCart(userId: string): Promise<{ error: any }> {
+   /**
+    * Clear entire cart
+    */
+  async clearCart(userId?: string): Promise<{ error: any }> {
     try {
+      const resolvedUserId = await resolveCartUserId(userId);
+
+      if (!resolvedUserId) {
+        clearStoredLocalCart();
+        return { error: null };
+      }
+
       const { error } = await supabase
         .from('cart_items')
         .delete()
-        .eq('user_id', userId);
+        .eq('user_id', resolvedUserId);
+
+      if (!error && isBrowser()) {
+        window.dispatchEvent(new CustomEvent('cart-updated'));
+      }
 
       return { error };
     } catch (error) {

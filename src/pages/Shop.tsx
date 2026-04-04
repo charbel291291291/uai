@@ -7,7 +7,6 @@ import ProductCard from '../components/ProductCard';
 import CartDrawer from '../components/CartDrawer';
 import { SEO } from '../components/SEO';
 import { useAuth } from '../App';
-import { Link } from 'react-router-dom';
 
 export default function Shop() {
   const { user } = useAuth();
@@ -38,11 +37,6 @@ export default function Shop() {
   };
 
   const handleAddToCart = async (productId: string) => {
-    if (!user) {
-      alert('Please log in to add items to cart');
-      return;
-    }
-
     try {
       setAddingToCart(productId);
       
@@ -51,7 +45,7 @@ export default function Shop() {
         return; // Already added
       }
 
-      const { error } = await cartService.addToCart(user.id, productId, 1);
+      const { error } = await cartService.addToCart(user?.id, productId, 1);
       
       if (error) {
         console.error('Error adding to cart:', error);
@@ -131,17 +125,15 @@ export default function Shop() {
             </div>
 
             {/* Cart Button */}
-            {user && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                onClick={() => setCartOpen(true)}
-                className="relative p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10"
-                aria-label="Open cart"
-              >
-                <ShoppingCart className="w-6 h-6 text-white" />
-              </motion.button>
-            )}
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              onClick={() => setCartOpen(true)}
+              className="relative p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10"
+              aria-label="Open cart"
+            >
+              <ShoppingCart className="w-6 h-6 text-white" />
+            </motion.button>
           </div>
 
           {/* Products Grid */}

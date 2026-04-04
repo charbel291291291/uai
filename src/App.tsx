@@ -15,6 +15,7 @@ import Checkout from './pages/Checkout';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import InstallBanner from './components/InstallBanner';
+import { cartService } from './services/ecommerceService';
 import { LangProvider } from './hooks/useLang';
 import { useInstallPrompt } from './hooks/useInstallPrompt';
 import { UserProfile } from './types';
@@ -201,6 +202,7 @@ export default function App() {
         case 'SIGNED_IN':
           // Validate the new session
           if (session?.user) {
+            await cartService.syncCartAfterLogin(session.user.id);
             setUser(session.user);
             // Store session timestamp for additional security
             localStorage.setItem('last_auth_check', Date.now().toString());
@@ -267,8 +269,16 @@ export default function App() {
 
     (async () => {
       try {
-        const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        if (!error) setProfile(data as UserProfile);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (error) {
+          console.warn('[App] Failed to fetch profile:', error);
+          return;
+        }
+        if (data) setProfile(data as UserProfile);
       } catch {
         // Silently handle error
       } finally {

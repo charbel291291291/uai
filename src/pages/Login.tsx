@@ -1,18 +1,19 @@
 import { supabase } from '../supabase';
-import { useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { LogIn } from 'lucide-react';
 import { SEO } from '../components/SEO';
 
 export default function Login() {
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const handleLogin = async () => {
     try {
+      const redirectPath = searchParams.get('redirect') || '/dashboard';
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${window.location.origin}${redirectPath}`
         }
       });
       if (error) throw error;

@@ -70,7 +70,7 @@ export default function Profile() {
           .from('profiles')
           .select('*')
           .eq('username', username.toLowerCase())
-          .single();
+          .maybeSingle();
 
         if (error || !data) {
           setError('Profile not found');

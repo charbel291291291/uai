@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { useState, useEffect, createContext, useContext, lazy, Suspense } from 'react';
 import { motion } from 'motion/react';
 import { supabase } from './supabase';
+import { cartService } from './services/ecommerceService';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import InstallBanner from './components/InstallBanner';
@@ -175,7 +176,10 @@ export default function App() {
       setLoading(false);
     }).catch(() => setLoading(false));
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        await cartService.syncCartAfterLogin(session.user.id);
+      }
       setUser(session?.user ?? null);
       if (!session?.user) setProfile(null);
     });
@@ -189,8 +193,16 @@ export default function App() {
 
     (async () => {
       try {
-        const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        if (!error) setProfile(data as UserProfile);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (error) {
+          console.warn('[AppOptimized] Failed to fetch profile:', error);
+          return;
+        }
+        if (data) setProfile(data as UserProfile);
       } catch {
         // Silently handle error
       } finally {

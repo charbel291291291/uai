@@ -17,12 +17,21 @@ export default function CartDrawer({ isOpen, onClose, userId }: CartDrawerProps)
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isOpen && userId) loadCart();
+    if (isOpen) loadCart();
+  }, [isOpen, userId]);
+
+  useEffect(() => {
+    const handleCartUpdated = () => {
+      if (isOpen) {
+        loadCart();
+      }
+    };
+
+    window.addEventListener('cart-updated', handleCartUpdated);
+    return () => window.removeEventListener('cart-updated', handleCartUpdated);
   }, [isOpen, userId]);
 
   const loadCart = async () => {
-    if (!userId) return;
-    
     setLoading(true);
     try {
       const { data } = await cartService.getCart(userId);
@@ -46,12 +55,12 @@ export default function CartDrawer({ isOpen, onClose, userId }: CartDrawerProps)
       return;
     }
 
-    await cartService.updateQuantity(itemId, newQty);
+    await cartService.updateQuantity(itemId, newQty, userId);
     loadCart(); // Refresh
   };
 
   const removeItem = async (itemId: string) => {
-    await cartService.removeFromCart(itemId);
+    await cartService.removeFromCart(itemId, userId);
     loadCart();
   };
 
