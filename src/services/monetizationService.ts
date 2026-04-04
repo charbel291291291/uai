@@ -139,48 +139,58 @@ export const productService = {
       console.log('[ProductService] Looking for product with ID/slug:', id);
       
       // First try to fetch by UUID (id column)
-      let { data, error } = await supabase
+      const { data: uuidData, error: uuidError } = await supabase
         .from('products')
         .select('*')
         .eq('id', id)
         .maybeSingle();
 
-      console.log('[ProductService] UUID lookup result:', data ? 'Found' : 'Not found');
+      console.log('[ProductService] UUID lookup - data:', uuidData ? 'Found' : 'null', 'error:', uuidError?.message || 'none');
 
-      // If not found by UUID, try fetching by SKU
-      if (!data && !error) {
-        // Convert slug format (nfc-card) to uppercase for SKU matching
-        const upperId = id.toUpperCase();
-        
-        console.log('[ProductService] Trying SKU pattern match with:', upperId);
-        
-        // Try exact SKU match first (e.g., nfc-card-001 -> NFC-CARD-001)
-        const { data: exactSkuData } = await supabase
-          .from('products')
-          .select('*')
-          .eq('sku', upperId)
-          .maybeSingle();
-        
-        if (exactSkuData) {
-          console.log('[ProductService] Found by exact SKU match');
-          return { data: exactSkuData, error: null };
-        }
-        
-        // Try pattern match (e.g., nfc-card -> NFC-CARD%)
-        const { data: patternData, error: patternError } = await supabase
-          .from('products')
-          .select('*')
-          .ilike('sku', `${upperId}%`)
-          .maybeSingle();
-        
-        console.log('[ProductService] Pattern match result:', patternData ? 'Found' : 'Not found');
-        
-        data = patternData;
-        error = patternError;
+      // If found by UUID, return it
+      if (uuidData) {
+        console.log('[ProductService] Found by UUID');
+        return { data: uuidData, error: null };
       }
 
-      console.log('[ProductService] Final result:', data ? `Found: ${data.name}` : 'Not found');
-      return { data, error };
+      // Not found by UUID, try fetching by SKU
+      console.log('[ProductService] UUID not found, trying SKU match...');
+      
+      // Convert slug format (nfc-keychain) to uppercase for SKU matching
+      const upperId = id.toUpperCase();
+      console.log('[ProductService] Trying SKU pattern match with:', upperId);
+      
+      // Try pattern match (e.g., nfc-keychain -> NFC-KEYCHAIN%)
+      const { data: skuData, error: skuError } = await supabase
+        .from('products')
+        .select('*')
+        .ilike('sku', `${upperId}%`)
+        .maybeSingle();
+      
+      console.log('[ProductService] SKU pattern match - data:', skuData ? `Found: ${skuData.name}` : 'null', 'error:', skuError?.message || 'none');
+      
+      if (skuData) {
+        console.log('[ProductService] Success! Found product:', skuData.name);
+        return { data: skuData, error: null };
+      }
+      
+      // Also try without the hyphen for flexibility
+      const noHyphenId = upperId.replace(/-/g, '');
+      console.log('[ProductService] Trying without hyphens:', noHyphenId);
+      
+      const { data: altData } = await supabase
+        .from('products')
+        .select('*')
+        .ilike('sku', `%${noHyphenId}%`)
+        .maybeSingle();
+      
+      if (altData) {
+        console.log('[ProductService] Found with alternative pattern:', altData.name);
+        return { data: altData, error: null };
+      }
+
+      console.warn('[ProductService] Product not found with any method');
+      return { data: null, error: null };
     } catch (error) {
       console.error('[ProductService] Error fetching product:', error);
       return { data: null, error };
