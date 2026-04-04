@@ -124,6 +124,7 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
   useEffect(() => {
     if (isBuyNowRef.current) {
       clearPendingBuyNowItem();
+      window.localStorage.removeItem('cart');
     }
   }, []);
 
@@ -160,6 +161,9 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
 
   const initializeCheckout = async () => {
     if (!user) return;
+    if (isBuyNowCheckout) {
+      console.log('🚫 CART SYSTEM DISABLED (BUY NOW MODE)');
+    }
 
     setPageLoading(true);
     setError(null);
@@ -317,22 +321,40 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
         await uploadPaymentProof();
       }
 
-      const rpcItems = itemsToCheckout.map((item) => ({
+      console.log('ITEMS FULL:', itemsToCheckout);
+
+      const normalizedItems = itemsToCheckout.map((item) => ({
         product_id: item.product_id,
-        quantity: item.quantity,
+        quantity: item.quantity || 1,
       }));
 
+      const rpcItems = normalizedItems
+        .map((item) => ({
+          product_id: item.product_id,
+          quantity: item.quantity,
+        }))
+        .filter((item) => item.product_id && item.quantity > 0);
+
+      if (rpcItems.length === 0) {
+        throw new Error('Invalid items: missing product_id or quantity');
+      }
+
       debugCheckoutLog('place order input', { clientOrderId, rpcItems, addressId });
+      console.log('🚨 SENDING TO RPC:', rpcItems);
 
       const { data, error: orderError } = await supabase.rpc('create_order_with_items', {
         p_items: rpcItems,
         p_client_order_id: clientOrderId,
       });
 
-      console.log('RPC RESULT:', data);
+      console.log('RPC RESPONSE:', data, orderError);
 
-      if (orderError || !data) {
-        throw orderError || new Error('Failed to create order.');
+      if (orderError) {
+        throw orderError;
+      }
+
+      if (!data) {
+        throw new Error('Failed to create order.');
       }
 
       debugCheckoutLog('place order success', data);

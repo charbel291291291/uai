@@ -83,9 +83,15 @@ const debugCheckoutLog = (message: string, payload?: unknown) => {
 const LOCAL_CART_KEY = 'cart';
 
 const isBrowser = () => typeof window !== 'undefined';
+const isCheckoutPath = () => isBrowser() && window.location.pathname.includes('checkout');
+const dispatchCartUpdated = () => {
+  if (!isBrowser() || isCheckoutPath()) return;
+  window.dispatchEvent(new CustomEvent('cart-updated'));
+};
 
 const getStoredLocalCart = (): LocalCartEntry[] => {
   if (!isBrowser()) return [];
+  if (isCheckoutPath()) return [];
 
   try {
     const raw = window.localStorage.getItem(LOCAL_CART_KEY);
@@ -106,14 +112,14 @@ const saveStoredLocalCart = (items: LocalCartEntry[]) => {
   if (!isBrowser()) return;
 
   window.localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(items));
-  window.dispatchEvent(new CustomEvent('cart-updated'));
+  dispatchCartUpdated();
 };
 
 const clearStoredLocalCart = () => {
   if (!isBrowser()) return;
 
   window.localStorage.removeItem(LOCAL_CART_KEY);
-  window.dispatchEvent(new CustomEvent('cart-updated'));
+  dispatchCartUpdated();
 };
 
 const resolveCartUserId = async (userId?: string): Promise<string | null> => {
@@ -216,7 +222,7 @@ export const cartService = {
           .single();
 
         if (!error && isBrowser()) {
-          window.dispatchEvent(new CustomEvent('cart-updated'));
+          dispatchCartUpdated();
         }
 
         return { data, error };
@@ -233,7 +239,7 @@ export const cartService = {
           .single();
 
         if (!error && isBrowser()) {
-          window.dispatchEvent(new CustomEvent('cart-updated'));
+          dispatchCartUpdated();
         }
 
         return { data, error };
@@ -348,7 +354,7 @@ export const cartService = {
         .single();
 
       if (!error && isBrowser()) {
-        window.dispatchEvent(new CustomEvent('cart-updated'));
+        dispatchCartUpdated();
       }
 
       return { data, error };
@@ -377,7 +383,7 @@ export const cartService = {
         .eq('id', cartItemId);
 
       if (!error && isBrowser()) {
-        window.dispatchEvent(new CustomEvent('cart-updated'));
+        dispatchCartUpdated();
       }
 
       return { error };
@@ -405,7 +411,7 @@ export const cartService = {
         .eq('user_id', resolvedUserId);
 
       if (!error && isBrowser()) {
-        window.dispatchEvent(new CustomEvent('cart-updated'));
+        dispatchCartUpdated();
       }
 
       return { error };
