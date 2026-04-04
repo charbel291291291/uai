@@ -21,6 +21,9 @@ const Dashboard = lazy(() => import('./pages/DashboardNew'));
 const Profile = lazy(() => import('./pages/ProfileNew'));
 const Explore = lazy(() => import('./pages/Explore'));
 const Login = lazy(() => import('./pages/Login'));
+const Shop = lazy(() => import('./pages/Shop'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess'));
 const Upgrade = lazy(() => import('./pages/Upgrade'));
 const Admin = lazy(() => import('./pages/Admin'));
 const AdminNFC = lazy(() => import('./pages/AdminNFC'));
@@ -70,8 +73,25 @@ function AppShell() {
             <Route path="/" element={<Home />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/shop" element={<Shop />} />
             
             {/* Protected routes with lazy loading */}
+            <Route
+              path="/checkout"
+              element={
+                <AuthGate>
+                  <Checkout />
+                </AuthGate>
+              }
+            />
+            <Route
+              path="/checkout/success"
+              element={
+                <AuthGate>
+                  <CheckoutSuccess />
+                </AuthGate>
+              }
+            />
             <Route
               path="/dashboard"
               element={
@@ -130,7 +150,8 @@ function AppShell() {
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  
+  const location = useLocation();
+
   if (loading) {
     return (
       <Suspense fallback={<PageLoadingFallback />}>
@@ -140,8 +161,13 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       </Suspense>
     );
   }
-  
-  return user ? <>{children}</> : <Navigate to="/login" replace />;
+  if (user) {
+    return <>{children}</>;
+  }
+
+  const redirectPath = `${location.pathname}${location.search}${location.hash}`;
+
+  return <Navigate to={`/login?redirect=${encodeURIComponent(redirectPath)}`} replace />;
 }
 
 // ============================================================================

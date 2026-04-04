@@ -9,7 +9,12 @@ export default function Login() {
 
   const handleLogin = async () => {
     try {
-      const redirectPath = searchParams.get('redirect') || '/dashboard';
+      const requestedRedirectPath = searchParams.get('redirect') || '/dashboard';
+      const redirectPath =
+        requestedRedirectPath.startsWith('/') && !requestedRedirectPath.startsWith('//')
+          ? requestedRedirectPath
+          : '/dashboard';
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

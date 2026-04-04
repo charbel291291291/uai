@@ -12,6 +12,7 @@ import Admin from './pages/Admin';
 import AdminNFC from './pages/AdminNFC';
 import Shop from './pages/Shop';
 import Checkout from './pages/Checkout';
+import CheckoutSuccess from './pages/CheckoutSuccess';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import InstallBanner from './components/InstallBanner';
@@ -85,6 +86,14 @@ function AppShell() {
             }
           />
           <Route
+            path="/checkout/success"
+            element={
+              <AuthGate>
+                <CheckoutSuccess />
+              </AuthGate>
+            }
+          />
+          <Route
             path="/dashboard"
             element={
               <AuthGate>
@@ -135,12 +144,21 @@ function AppShell() {
 // ── Auth guard ──────────────────────────────────────────────────────────────
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
+
   if (loading) return (
     <div className="flex items-center justify-center h-[60vh]">
       <div className="w-8 h-8 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
     </div>
   );
-  return user ? <>{children}</> : <Navigate to="/login" />;
+
+  if (user) {
+    return <>{children}</>;
+  }
+
+  const redirectPath = `${location.pathname}${location.search}${location.hash}`;
+
+  return <Navigate to={`/login?redirect=${encodeURIComponent(redirectPath)}`} replace />;
 }
 
 // ── Root ────────────────────────────────────────────────────────────────────

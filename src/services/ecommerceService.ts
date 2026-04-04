@@ -67,6 +67,19 @@ export interface OrderStatusHistory {
   created_at: string;
 }
 
+export interface CheckoutItemInput {
+  product_id: string;
+  quantity: number;
+  price: number;
+}
+
+const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
+
+const debugCheckoutLog = (message: string, payload?: unknown) => {
+  if (!isDev) return;
+  console.log(`[Checkout] ${message}`, payload);
+};
+
 const LOCAL_CART_KEY = 'cart';
 
 const isBrowser = () => typeof window !== 'undefined';
@@ -658,6 +671,44 @@ export const bundleService = {
 // ============================================================================
 
 export const ecommerceCheckoutService = {
+  async createOrderWithItems(input: {
+    userId: string;
+    items: CheckoutItemInput[];
+    addressId: string;
+    paymentMethod: 'cod' | 'omt' | 'wish' | 'bank_transfer';
+    deliveryFeeCents: number;
+    referenceNumber?: string;
+    proofImageUrl?: string;
+    clientOrderId?: string;
+  }): Promise<{ data: Order | null; error: any }> {
+    try {
+      debugCheckoutLog('RPC request', input);
+
+      const { data, error } = await supabase.rpc('create_order_with_items', {
+        p_user_id: input.userId,
+        p_items: input.items,
+        p_address_id: input.addressId,
+        p_payment_method: input.paymentMethod,
+        p_reference_number: input.referenceNumber ?? null,
+        p_delivery_fee_cents: input.deliveryFeeCents,
+        p_proof_image_url: input.proofImageUrl ?? null,
+        p_client_order_id: input.clientOrderId ?? null,
+      });
+
+      if (error) {
+        debugCheckoutLog('RPC error', error);
+        return { data: null, error };
+      }
+
+      const order = Array.isArray(data) ? data[0] : data;
+      debugCheckoutLog('RPC success', order);
+      return { data: order ?? null, error: null };
+    } catch (error) {
+      console.error('[EcommerceCheckout] Error creating order with items:', error);
+      return { data: null, error };
+    }
+  },
+
   /**
    * Complete checkout - creates order from cart
    */

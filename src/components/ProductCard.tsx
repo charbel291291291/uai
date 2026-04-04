@@ -5,15 +5,19 @@ import type { Product } from '../services/monetizationService';
 interface ProductCardProps {
   product: Product;
   onAddToCart: (productId: string) => void;
+  onBuyNow: (product: Product) => void;
   isAdding?: boolean;
   added?: boolean;
+  isBuyingNow?: boolean;
 }
 
 export default function ProductCard({ 
   product, 
   onAddToCart, 
+  onBuyNow,
   isAdding = false,
-  added = false 
+  added = false,
+  isBuyingNow = false,
 }: ProductCardProps) {
   const price = product.price_cents / 100;
 
@@ -76,35 +80,44 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* Add to Cart Button */}
-        <button
-          onClick={() => onAddToCart(product.id)}
-          disabled={isAdding || added || (product.stock_quantity === 0)}
-          className={`w-full py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
-            added
-              ? 'bg-green-500 text-white'
-              : product.stock_quantity === 0
-              ? 'bg-gray-500/50 text-white/50 cursor-not-allowed'
-              : 'btn-neon'
-          }`}
-        >
-          {isAdding ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Adding...
-            </>
-          ) : added ? (
-            <>
-              <Check className="w-5 h-5" />
-              Added!
-            </>
-          ) : (
-            <>
-              <ShoppingCart className="w-5 h-5" />
-              Add to Cart
-            </>
-          )}
-        </button>
+        <div className="space-y-3">
+          <button
+            onClick={() => onAddToCart(product.id)}
+            disabled={isAdding || added || (product.stock_quantity === 0)}
+            className={`w-full py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
+              added
+                ? 'bg-green-500 text-white'
+                : product.stock_quantity === 0
+                ? 'bg-gray-500/50 text-white/50 cursor-not-allowed'
+                : 'btn-neon'
+            }`}
+          >
+            {isAdding ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Adding...
+              </>
+            ) : added ? (
+              <>
+                <Check className="w-5 h-5" />
+                Added!
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="w-5 h-5" />
+                Add to Cart
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={() => onBuyNow(product)}
+            disabled={isBuyingNow || (product.stock_quantity === 0)}
+            className="w-full py-3 rounded-lg font-bold border border-white/15 bg-white/5 text-white transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isBuyingNow ? 'Loading...' : 'Buy Now'}
+          </button>
+        </div>
       </div>
     </motion.div>
   );
