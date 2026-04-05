@@ -9,20 +9,6 @@ import { Card } from '../components/ui/Card';
 import { SEO } from '../components/SEO';
 import { hasAdminAccess } from '../config/admin';
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'pending':
-      return 'orange';
-    case 'confirmed':
-      return 'blue';
-    case 'shipped':
-      return 'purple';
-    case 'delivered':
-      return 'green';
-    default:
-      return 'gray';
-  }
-};
 
 interface AdminOrderItemProduct {
   name?: string;
@@ -54,6 +40,7 @@ export default function AdminNFC() {
   const { user, profile } = useAuth();
   const { orders, loading, error, fetchOrders } = useNFCOrdersAdmin();
   const [search, setSearch] = useState('');
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchOrders();
@@ -80,13 +67,15 @@ export default function AdminNFC() {
   );
 
   const updateStatus = async (id: string, status: string) => {
-    const { error: updateError } = await supabase
+    setUpdateError(null);
+    const { error: err } = await supabase
       .from('orders')
       .update({ status })
       .eq('id', id);
 
-    if (updateError) {
-      console.error(updateError);
+    if (err) {
+      console.error('[AdminNFC] status update error:', err.message);
+      setUpdateError('Failed to update status. Please try again.');
     } else {
       await fetchOrders();
     }
@@ -102,13 +91,20 @@ export default function AdminNFC() {
 
       <div className="min-h-screen bg-black text-white p-6 pt-24">
         <div className="max-w-6xl mx-auto">
+          {updateError && (
+            <div className="mb-4 flex items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              <AlertCircle size={16} className="shrink-0" />
+              {updateError}
+            </div>
+          )}
+
           <div className="flex items-center justify-between gap-4 mb-6">
             <Link
-              to="/dashboard"
+              to="/admin"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/80 hover:text-white hover:bg-white/20 transition-all text-sm font-medium border border-white/10"
             >
               <ArrowLeft size={16} />
-              Dashboard
+              Admin
             </Link>
 
             <Button variant="secondary" onClick={() => fetchOrders()} disabled={loading}>
@@ -169,10 +165,6 @@ export default function AdminNFC() {
                       {typedOrder.status}
                     </span>
                   </div>
-
-                  <p style={{ color: getStatusColor(typedOrder.status || 'pending') }}>
-                    {typedOrder.status}
-                  </p>
 
                   <p className="text-white/60 mb-2">
                     User: {typedOrder.profiles?.display_name || typedOrder.user?.display_name || 'Unknown'}

@@ -50,9 +50,8 @@ export default function AdminOrders() {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error(error);
+      console.error('[AdminOrders] fetch error:', error.message);
     } else {
-      console.log(JSON.stringify(data, null, 2));
       setOrders((data || []) as Order[]);
     }
 

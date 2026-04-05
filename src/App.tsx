@@ -75,7 +75,7 @@ function AppShell() {
     } catch {
       localStorage.removeItem('auth_redirect');
     }
-  }, [user]);
+  }, [user, navigate]);
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text selection:bg-brand-accent/30 transition-colors duration-500">
