@@ -138,6 +138,8 @@ export default function Shop() {
 
     setBuyingNow(product.id);
     navigate('/checkout', { state: { buyNowItem } });
+    // Reset after navigation — React Router keeps component mounted
+    setTimeout(() => setBuyingNow(null), 500);
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../supabase';
@@ -41,6 +41,14 @@ export default function Dashboard() {
   const [messages, setMessages] = useState<any[]>([]);
 
   const currentPlan = subscription?.plan || 'free';
+  const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timer on unmount to prevent setState on unmounted component
+  useEffect(() => {
+    return () => {
+      if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
+    };
+  }, []);
 
   // Initialize form data
   useEffect(() => {
@@ -65,28 +73,41 @@ export default function Dashboard() {
     if (!user) return;
 
     const fetchData = async () => {
-      const [{ data: leadsData }, { data: messagesData }] = await Promise.all([
-        supabase.from('leads').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }),
-        supabase.from('messages').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }),
-      ]);
-      if (leadsData) setLeads(leadsData);
-      if (messagesData) setMessages(messagesData);
+      try {
+        const [{ data: leadsData }, { data: messagesData }] = await Promise.all([
+          supabase.from('leads').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('messages').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }),
+        ]);
+        if (leadsData) setLeads(leadsData);
+        if (messagesData) setMessages(messagesData);
+      } catch {
+        // Non-fatal — leads/messages are optional features
+      }
     };
 
-    fetchData();
+    void fetchData();
   }, [user]);
 
   // Save profile
   const handleSave = useCallback(async () => {
     if (!user) return;
+
+    // Validate required fields before hitting the DB
+    const trimmedUsername = profile.username?.trim().toLowerCase() || '';
+    const trimmedDisplayName = profile.displayName?.trim() || '';
+    if (!trimmedUsername) {
+      setSaveStatus('error');
+      return;
+    }
+
     setIsSaving(true);
     setSaveStatus('idle');
 
     try {
       const { error } = await supabase.from('profiles').upsert({
         id: user.id,
-        username: profile.username?.toLowerCase(),
-        display_name: profile.displayName,
+        username: trimmedUsername,
+        display_name: trimmedDisplayName || trimmedUsername,
         bio: profile.bio,
         avatar_url: profile.avatarUrl,
         theme_color: profile.themeColor,
@@ -102,7 +123,8 @@ export default function Dashboard() {
 
       if (error) throw error;
       setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
+      if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
+      saveStatusTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (err) {
       console.error('Save error:', err);
       setSaveStatus('error');

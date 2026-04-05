@@ -29,6 +29,7 @@ import SecureLogger from './utils/SecureLogger';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminRoute from './components/AdminRoute';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import { ErrorBoundary } from './error-handling-system/ErrorBoundary';
 
 export type NeonTheme = 'cyber-purple' | 'electric-blue' | 'gold-glow' | 'cyber-green';
 
@@ -359,7 +360,9 @@ export default function App() {
     <AuthContext.Provider value={{ user, profile, loading, theme, setTheme }}>
       <LangProvider>
         <Router>
-          <AppShell />
+          <ErrorBoundary>
+            <AppShell />
+          </ErrorBoundary>
         </Router>
       </LangProvider>
     </AuthContext.Provider>
