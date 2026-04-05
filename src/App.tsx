@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, createContext, useContext } from 'react';
 import { motion } from 'motion/react';
 import { supabase } from './supabase';
@@ -53,7 +53,19 @@ export const useAuth = () => useContext(AuthContext);
 // ── Inner shell (needs Router context for useLocation) ─────────────────────
 function AppShell() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const { isInstallable, justInstalled, install, dismiss } = useInstallPrompt();
+
+  // Consume the post-OAuth redirect once the user is confirmed in state
+  useEffect(() => {
+    if (!user) return;
+    const dest = localStorage.getItem('auth_redirect');
+    if (dest) {
+      localStorage.removeItem('auth_redirect');
+      navigate(dest, { replace: true });
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text selection:bg-brand-accent/30 transition-colors duration-500">
@@ -231,12 +243,7 @@ export default function App() {
             } catch {
               // Non-fatal — continue regardless
             }
-            // Honour post-OAuth redirect stored before Google login
-            const postOAuthRedirect = localStorage.getItem('auth_redirect');
-            if (postOAuthRedirect) {
-              localStorage.removeItem('auth_redirect');
-              window.location.replace(postOAuthRedirect);
-            }
+            // Redirect is handled in AppShell once user state is confirmed
           }
           break;
           
