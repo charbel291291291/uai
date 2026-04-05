@@ -15,7 +15,7 @@ export default function Login() {
         requestedRedirectPath.startsWith('/') && !requestedRedirectPath.startsWith('//')
           ? requestedRedirectPath
           : '/dashboard';
-      sessionStorage.setItem('auth_redirect', redirectPath);
+      localStorage.setItem('auth_redirect', redirectPath);
 
       // redirectTo must be the app origin — this URL must be in Supabase
       // Authentication → URL Configuration → Redirect URLs allowlist

@@ -232,9 +232,9 @@ export default function App() {
               // Non-fatal — continue regardless
             }
             // Honour post-OAuth redirect stored before Google login
-            const postOAuthRedirect = sessionStorage.getItem('auth_redirect');
+            const postOAuthRedirect = localStorage.getItem('auth_redirect');
             if (postOAuthRedirect) {
-              sessionStorage.removeItem('auth_redirect');
+              localStorage.removeItem('auth_redirect');
               window.location.replace(postOAuthRedirect);
             }
           }
