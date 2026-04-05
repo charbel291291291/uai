@@ -15,7 +15,8 @@ export default function Login() {
         requestedRedirectPath.startsWith('/') && !requestedRedirectPath.startsWith('//')
           ? requestedRedirectPath
           : '/dashboard';
-      localStorage.setItem('auth_redirect', redirectPath);
+      // Store with timestamp so AppShell can discard stale entries
+      localStorage.setItem('auth_redirect', JSON.stringify({ path: redirectPath, ts: Date.now() }));
 
       // redirectTo must be the app origin — this URL must be in Supabase
       // Authentication → URL Configuration → Redirect URLs allowlist

@@ -57,13 +57,22 @@ function AppShell() {
   const { user } = useAuth();
   const { isInstallable, justInstalled, install, dismiss } = useInstallPrompt();
 
-  // Consume the post-OAuth redirect once the user is confirmed in state
+  // Consume the post-OAuth redirect once the user is confirmed in state.
+  // Guard against stale entries by checking a timestamp stored alongside the path.
   useEffect(() => {
     if (!user) return;
-    const dest = localStorage.getItem('auth_redirect');
-    if (dest) {
+    try {
+      const raw = localStorage.getItem('auth_redirect');
+      if (!raw) return;
+      const { path, ts } = JSON.parse(raw) as { path: string; ts: number };
       localStorage.removeItem('auth_redirect');
-      navigate(dest, { replace: true });
+      // Discard if older than 10 minutes (stale from a previous session)
+      if (Date.now() - ts > 10 * 60 * 1000) return;
+      if (path && path.startsWith('/') && !path.startsWith('//')) {
+        navigate(path, { replace: true });
+      }
+    } catch {
+      localStorage.removeItem('auth_redirect');
     }
   }, [user]);
 
@@ -248,13 +257,14 @@ export default function App() {
           break;
           
         case 'SIGNED_OUT':
+          setUser(null);
+          setProfile(null);
+          localStorage.removeItem('last_auth_check');
+          break;
+
         case 'TOKEN_REFRESHED':
-          if (!session) {
-            setUser(null);
-            setProfile(null);
-            // Clear sensitive data but keep preferences
-            localStorage.removeItem('last_auth_check');
-          } else if (session.user) {
+          // Token refresh always carries a valid session — just sync the user
+          if (session?.user) {
             setUser(session.user);
           }
           break;
@@ -318,9 +328,7 @@ export default function App() {
         }
         if (data) setProfile(data as UserProfile);
       } catch {
-        // Silently handle error
-      } finally {
-        setLoading(false);
+        // Silently handle — profile is optional for initial render
       }
     })();
 
