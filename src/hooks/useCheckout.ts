@@ -115,10 +115,6 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
   );
   const total = subtotal + deliveryFee;
 
-  useEffect(() => {
-    console.log('BUY NOW STATE:', buyNowFromState);
-    console.log('FINAL ITEMS:', itemsToCheckout);
-  }, [buyNowFromState, itemsToCheckout]);
 
   useEffect(() => {
     if (isBuyNowCheckout) {
@@ -153,27 +149,15 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
 
   const reportError = (message: string) => {
     setError(message);
-    if (typeof window !== 'undefined') {
-      window.alert(message);
-    }
   };
 
   const initializeCheckout = async () => {
     if (!user) return;
-    if (isBuyNowCheckout) {
-      console.log('🚫 CART SYSTEM DISABLED (BUY NOW MODE)');
-    }
 
     setPageLoading(true);
     setError(null);
 
     try {
-      debugCheckoutLog('initialize checkout', {
-        buyNowFromState,
-        isBuyNowCheckout,
-        userId: user.id,
-      });
-
       const { data: addressesData, error: addressesError } = await addressService.getUserAddresses(user.id);
 
       if (addressesError) {
@@ -189,14 +173,11 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
       }
 
       if (isBuyNowCheckout) {
-        console.log('🚫 BLOCKING CART LOAD (BUY NOW MODE)');
         setCartItems([]);
         return;
       }
 
       if (!isBuyNowCheckout) {
-        // TEMP DISABLE
-        // const cartResult = await cartService.getCart(user.id);
         const cartResult = await cartService.getCart(user.id);
         if (cartResult.error) {
           throw cartResult.error;
@@ -289,8 +270,6 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
   };
 
   const handlePlaceOrder = async () => {
-    console.log('START CHECKOUT');
-
     if (loading || activeOrderRef.current) return;
 
     setError(null);
@@ -320,8 +299,6 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
         ? await uploadPaymentProof()
         : null;
 
-      console.log('ITEMS FULL:', itemsToCheckout);
-
       const normalizedItems = itemsToCheckout.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity || 1,
@@ -346,12 +323,6 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
         deliveryFee,
         proofImageUrl,
       });
-      console.log('RPC INPUT:', {
-        user: user.id,
-        items: rpcItems,
-        address: addressId,
-      });
-      console.log('🚨 SENDING TO RPC:', rpcItems);
 
       const { data, error: orderError } = await supabase.rpc('create_order_full', {
         p_user_id: user.id,
@@ -363,8 +334,6 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
         p_proof_image_url: proofImageUrl,
         p_client_order_id: clientOrderId,
       });
-
-      console.log('RPC RESPONSE:', data, orderError);
 
       if (orderError) {
         throw orderError;
