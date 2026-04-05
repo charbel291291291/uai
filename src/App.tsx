@@ -221,11 +221,16 @@ export default function App() {
       
       switch (event) {
         case 'SIGNED_IN':
-          // Validate the new session
           if (session?.user) {
-            await cartService.syncCartAfterLogin(session.user.id);
+            // Set user immediately — never block on cart sync
             setUser(session.user);
             localStorage.setItem('last_auth_check', Date.now().toString());
+            // Cart sync is best-effort; new users may have no cart yet
+            try {
+              await cartService.syncCartAfterLogin(session.user.id);
+            } catch {
+              // Non-fatal — continue regardless
+            }
             // Honour post-OAuth redirect stored before Google login
             const postOAuthRedirect = sessionStorage.getItem('auth_redirect');
             if (postOAuthRedirect) {
