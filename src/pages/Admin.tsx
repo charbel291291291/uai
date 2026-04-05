@@ -15,7 +15,7 @@ import { Badge } from '../components/ui/Badge';
 import { Input } from '../components/ui/Input';
 import { SEO } from '../components/SEO';
 import type { PaymentRequest } from '../types';
-import { isAdmin, ADMIN_ROUTES, checkIsAdmin } from '../config/admin';
+import { ADMIN_ROUTES, hasAdminAccess } from '../config/admin';
 
 interface PaymentWithUser extends PaymentRequest {
   user?: {
@@ -47,7 +47,7 @@ export default function Admin() {
   }, [fetchPendingPayments]);
 
   // Check if user is admin using centralized config (by username OR email)
-  const userIsAdmin = checkIsAdmin(profile?.username, user?.email);
+  const userIsAdmin = hasAdminAccess(profile, user);
 
   if (!userIsAdmin) {
     return (

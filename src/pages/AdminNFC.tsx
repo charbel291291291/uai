@@ -7,7 +7,7 @@ import { useNFCOrdersAdmin } from '../hooks/useNFCOrders';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { SEO } from '../components/SEO';
-import { checkIsAdmin } from '../config/admin';
+import { hasAdminAccess } from '../config/admin';
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -59,7 +59,7 @@ export default function AdminNFC() {
     void fetchOrders();
   }, [fetchOrders]);
 
-  const userIsAdmin = checkIsAdmin(profile?.username, user?.email);
+  const userIsAdmin = hasAdminAccess(profile, user);
 
   if (!userIsAdmin) {
     return (

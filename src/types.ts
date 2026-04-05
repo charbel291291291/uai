@@ -106,6 +106,7 @@ export interface UserProfile {
   uid: string;
   username: string;
   displayName: string;
+  role?: string;
   bio?: string;
   avatarUrl?: string;
   links?: UserLink[];

@@ -11,6 +11,7 @@ import Upgrade from './pages/Upgrade';
 import Admin from './pages/Admin';
 import AdminNFC from './pages/AdminNFC';
 import AdminOrders from './pages/AdminOrders';
+import AdminProducts from './pages/AdminProducts';
 import Shop from './pages/Shop';
 import Checkout from './pages/Checkout';
 import CheckoutSuccess from './pages/CheckoutSuccess';
@@ -25,6 +26,9 @@ import { SkipLink, AnnouncerRegions, FocusVisibleStyles } from './components/acc
 import FloatingThemeSwitcher from './components/FloatingThemeSwitcher';
 import BackButton from './components/BackButton';
 import SecureLogger from './utils/SecureLogger';
+import AdminLayout from './components/admin/AdminLayout';
+import AdminRoute from './components/AdminRoute';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 export type NeonTheme = 'cyber-purple' | 'electric-blue' | 'gold-glow' | 'cyber-green';
 
@@ -113,27 +117,17 @@ function AppShell() {
           <Route
             path="/admin"
             element={
-              <AuthGate>
-                <Admin />
-              </AuthGate>
+              <AdminRoute>
+                <AdminLayout />
+              </AdminRoute>
             }
-          />
-          <Route
-            path="/admin/nfc"
-            element={
-              <AuthGate>
-                <AdminNFC />
-              </AuthGate>
-            }
-          />
-          <Route
-            path="/admin/orders"
-            element={
-              <AuthGate>
-                <AdminOrders />
-              </AuthGate>
-            }
-          />
+          >
+            <Route index element={<AdminProducts />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="payments" element={<Admin />} />
+            <Route path="nfc" element={<AdminNFC />} />
+          </Route>
           <Route path="/p/:username" element={<Profile />} />
           <Route path="/:username"   element={<Profile />} />
         </Routes>

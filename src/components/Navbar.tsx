@@ -9,6 +9,9 @@ import { useLang } from '../hooks/useLang';
 import { useSubscription } from '../hooks/useSubscription';
 import Notifications from './Notifications';
 import type { ComponentType } from 'react';
+import { ADMIN_ROUTES } from '../config/admin';
+import { Settings2 } from 'lucide-react';
+import { useAdmin } from '../hooks/useAdmin';
 
 export default function Navbar() {
   const { user, profile, theme, setTheme } = useAuth();
@@ -16,6 +19,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [langExpanded, setLangExpanded] = useState(false);
   const { subscription, isExpired } = useSubscription(user?.id);
+  const { isAdmin: userIsAdmin, loading: adminLoading } = useAdmin();
 
   const currentPlan = subscription?.plan || 'free';
   const PlanIcon: ComponentType<LucideProps> | null = currentPlan === 'elite' ? Crown : currentPlan === 'pro' ? Zap : null;
@@ -119,6 +123,14 @@ export default function Navbar() {
             </AnimatePresence>
           </div>
         </motion.div>
+
+        {!adminLoading && userIsAdmin && (
+          <Link to={ADMIN_ROUTES.MAIN}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 transition-colors text-white/60 hover:text-white shrink-0"
+            aria-label="Admin panel">
+            <Settings2 size={16} className="text-brand-accent" />
+          </Link>
+        )}
 
         {/* Desktop nav links */}
         <div className="hidden sm:flex items-center gap-2">

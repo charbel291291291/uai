@@ -10,6 +10,7 @@ import { LangProvider } from './hooks/useLang';
 import { useInstallPrompt } from './hooks/useInstallPrompt';
 import { UserProfile } from './types';
 import LazyPageWrapper, { PageLoadingFallback } from './pages/LazyPages';
+import { hasAdminAccess } from './config/admin';
 
 // ============================================================================
 // LAZY LOADED PAGES (Code Splitting)
@@ -28,6 +29,8 @@ const Upgrade = lazy(() => import('./pages/Upgrade'));
 const Admin = lazy(() => import('./pages/Admin'));
 const AdminNFC = lazy(() => import('./pages/AdminNFC'));
 const AdminOrders = lazy(() => import('./pages/AdminOrders'));
+const AdminProducts = lazy(() => import('./pages/AdminProducts'));
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
 
 export type NeonTheme = 'cyber-purple' | 'electric-blue' | 'gold-glow' | 'cyber-green';
 
@@ -112,27 +115,16 @@ function AppShell() {
             <Route
               path="/admin"
               element={
-                <AuthGate>
-                  <Admin />
-                </AuthGate>
+                <AdminGate>
+                  <AdminLayout />
+                </AdminGate>
               }
-            />
-            <Route
-              path="/admin/nfc"
-              element={
-                <AuthGate>
-                  <AdminNFC />
-                </AuthGate>
-              }
-            />
-            <Route
-              path="/admin/orders"
-              element={
-                <AuthGate>
-                  <AdminOrders />
-                </AuthGate>
-              }
-            />
+            >
+              <Route index element={<AdminProducts />} />
+              <Route path="orders" element={<AdminOrders />} />
+              <Route path="payments" element={<Admin />} />
+              <Route path="nfc" element={<AdminNFC />} />
+            </Route>
             <Route path="/p/:username" element={<Profile />} />
             <Route path="/:username" element={<Profile />} />
             
@@ -177,6 +169,30 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const redirectPath = `${location.pathname}${location.search}${location.hash}`;
 
   return <Navigate to={`/login?redirect=${encodeURIComponent(redirectPath)}`} replace />;
+}
+
+function AdminGate({ children }: { children: React.ReactNode }) {
+  const { user, profile, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="w-8 h-8 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+        </div>
+      </Suspense>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (!hasAdminAccess(profile, user)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
 }
 
 // ============================================================================

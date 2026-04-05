@@ -9,15 +9,13 @@ import {
   User, Link as LinkIcon, Sparkles, Plus, Trash2, Save,
   LayoutDashboard, MessageSquare, Star, BarChart3, Users,
   Settings, ChevronRight, ExternalLink, CheckCircle2,
-  AlertCircle, Eye, TrendingUp, Zap, Crown, Lock,
-  Shield, Package, DollarSign
+  AlertCircle, Eye, TrendingUp, Zap, Crown, Lock
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, StatCard } from '../components/ui/Card';
 import { Input, TextArea } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { SEO } from '../components/SEO';
-import { isAdmin, ADMIN_ROUTES, checkIsAdmin } from '../config/admin';
 
 // ─── Sidebar Navigation ─────────────────────────────────────────────────────
 const sidebarItems = [
@@ -496,47 +494,6 @@ export default function Dashboard() {
                   </div>
                 </Card>
 
-                {/* Admin Panel Links (Only for admins) */}
-                {checkIsAdmin(authProfile?.username, user?.email) && (
-                  <Card className="border-brand-accent/30 bg-gradient-to-r from-brand-accent/5 to-purple-500/5">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-lg bg-brand-accent/20 flex items-center justify-center">
-                        <Shield className="text-brand-accent" size={20} />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">Admin Panel</h3>
-                        <p className="text-sm text-white/50">Manage payments and orders</p>
-                      </div>
-                    </div>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <Link to={ADMIN_ROUTES.MAIN}>
-                        <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
-                          <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 group-hover:bg-green-500/30 transition-colors">
-                            <DollarSign size={20} />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-white">Payment Requests</p>
-                            <p className="text-sm text-white/40">Approve subscriptions</p>
-                          </div>
-                          <ChevronRight size={18} className="text-white/20" />
-                        </div>
-                      </Link>
-
-                      <Link to={ADMIN_ROUTES.NFC_ORDERS}>
-                        <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
-                          <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover:bg-blue-500/30 transition-colors">
-                            <Package size={20} />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-white">NFC Orders</p>
-                            <p className="text-sm text-white/40">Manage deliveries</p>
-                          </div>
-                          <ChevronRight size={18} className="text-white/20" />
-                        </div>
-                      </Link>
-                    </div>
-                  </Card>
-                )}
               </motion.div>
             )}
 
