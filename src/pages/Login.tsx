@@ -9,17 +9,21 @@ export default function Login() {
 
   const handleLogin = async () => {
     try {
+      // Store the intended destination so we can redirect after OAuth completes
       const requestedRedirectPath = searchParams.get('redirect') || '/dashboard';
       const redirectPath =
         requestedRedirectPath.startsWith('/') && !requestedRedirectPath.startsWith('//')
           ? requestedRedirectPath
           : '/dashboard';
+      sessionStorage.setItem('auth_redirect', redirectPath);
 
+      // redirectTo must be the app origin — this URL must be in Supabase
+      // Authentication → URL Configuration → Redirect URLs allowlist
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}${redirectPath}`
-        }
+          redirectTo: window.location.origin,
+        },
       });
       if (error) throw error;
     } catch (error) {

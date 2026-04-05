@@ -225,8 +225,13 @@ export default function App() {
           if (session?.user) {
             await cartService.syncCartAfterLogin(session.user.id);
             setUser(session.user);
-            // Store session timestamp for additional security
             localStorage.setItem('last_auth_check', Date.now().toString());
+            // Honour post-OAuth redirect stored before Google login
+            const postOAuthRedirect = sessionStorage.getItem('auth_redirect');
+            if (postOAuthRedirect) {
+              sessionStorage.removeItem('auth_redirect');
+              window.location.replace(postOAuthRedirect);
+            }
           }
           break;
           
