@@ -294,7 +294,7 @@ class ProfileService {
 
       if (fetchError) throw fetchError;
 
-      const services = (profile.services || []).filter((_, i) => i !== serviceIndex);
+      const services = ((profile.services || []) as Service[]).filter((_: Service, i: number) => i !== serviceIndex);
 
       const { error: updateError } = await this.supabase
         .from('profiles')
@@ -350,7 +350,7 @@ class ProfileService {
 
       if (fetchError) throw fetchError;
 
-      const links = (profile.links || []).filter((_, i) => i !== linkIndex);
+      const links = (profile.links || []).filter((_: UserLink, i: number) => i !== linkIndex);
 
       const { error: updateError } = await this.supabase
         .from('profiles')

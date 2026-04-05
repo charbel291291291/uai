@@ -122,10 +122,27 @@ class OrderService {
   async getAllOrders(statusFilter?: string) {
     try {
       let query = this.supabase
-        .from('nfc_orders')
+        .from('orders')
         .select(`
-          *,
-          user:profiles(username, display_name, avatar_url)
+          id,
+          status,
+          total_cents,
+          created_at,
+          payment_method,
+          payment_status,
+          profiles (
+            id,
+            username,
+            display_name
+          ),
+          order_items (
+            quantity,
+            total_cents,
+            products (
+              name,
+              price_cents
+            )
+          )
         `)
         .order('created_at', { ascending: false });
 
@@ -137,7 +154,35 @@ class OrderService {
 
       if (error) throw error;
 
-      return apiClient.createResponse<NFCOrder[]>(data || [], null);
+      const normalizedOrders = (data || []).map((order: any) => {
+        const itemNames = (order.order_items || [])
+          .map((item: any) => item.products?.name)
+          .filter(Boolean)
+          .join(', ');
+
+        return {
+          id: order.id,
+          user_id: order.profiles?.id || '',
+          product_type: 'card',
+          name: itemNames || 'Order',
+          status: order.status,
+          price: ((order.total_cents || 0) / 100),
+          total_cents: order.total_cents || 0,
+          created_at: order.created_at,
+          profiles: order.profiles || null,
+          user: order.profiles
+            ? {
+                username: order.profiles.username,
+                display_name: order.profiles.display_name,
+              }
+            : undefined,
+          order_items: order.order_items || [],
+          payment_method: order.payment_method,
+          payment_status: order.payment_status,
+        };
+      });
+
+      return apiClient.createResponse<NFCOrder[]>(normalizedOrders as NFCOrder[], null);
     } catch (error: any) {
       return apiClient.createResponse<NFCOrder[]>(null, error);
     }
@@ -148,17 +193,23 @@ class OrderService {
   // --------------------------------------------------------------------------
   async updateOrderStatus(data: UpdateOrderStatusData) {
     try {
-      const { data: userData } = await this.supabase.auth.getUser();
-      const adminId = userData.user?.id;
+      const updatePayload: Record<string, any> = {
+        status: data.status,
+        updated_at: new Date().toISOString(),
+      };
 
-      const { error } = await this.supabase.rpc('update_nfc_order', {
-        order_id: data.orderId,
-        new_status: data.status,
-        tracking_num: data.trackingNumber || null,
-        carrier: data.carrier || null,
-        admin_note: data.adminNotes || null,
-        admin_id: adminId,
-      });
+      if (data.trackingNumber) {
+        updatePayload.tracking_number = data.trackingNumber;
+      }
+
+      if (data.adminNotes) {
+        updatePayload.admin_notes = data.adminNotes;
+      }
+
+      const { error } = await this.supabase
+        .from('orders')
+        .update(updatePayload)
+        .eq('id', data.orderId);
 
       if (error) throw error;
 
@@ -174,11 +225,11 @@ class OrderService {
   async cancelOrder(orderId: string, reason?: string) {
     try {
       const { error } = await this.supabase
-        .from('nfc_orders')
+        .from('orders')
         .update({
           status: 'cancelled',
-          cancellation_reason: reason,
-          cancelled_at: new Date().toISOString(),
+          admin_notes: reason || null,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', orderId);
 
@@ -264,16 +315,33 @@ class OrderService {
     try {
       const { data, error } = await this.supabase
         .from('payment_requests')
-        .select(`
-          *,
-          user:profiles(username, display_name, avatar_url)
-        `)
+        .select('*')
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      return apiClient.createResponse<PaymentRequest[]>(data || [], null);
+      const payments = data || [];
+
+      if (payments.length === 0) {
+        return apiClient.createResponse<PaymentRequest[]>([], null);
+      }
+
+      const userIds = [...new Set(payments.map((payment) => payment.user_id).filter(Boolean))];
+      const { data: profiles, error: profilesError } = await this.supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      const profileMap = new Map((profiles || []).map((profile) => [profile.id, profile]));
+      const enrichedPayments = payments.map((payment) => ({
+        ...payment,
+        user: profileMap.get(payment.user_id) || null,
+      }));
+
+      return apiClient.createResponse<PaymentRequest[]>(enrichedPayments, null);
     } catch (error: any) {
       return apiClient.createResponse<PaymentRequest[]>(null, error);
     }

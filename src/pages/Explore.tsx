@@ -160,13 +160,13 @@ export default function Explore() {
         type="website"
       />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
         {/* Header */}
-        <div className="mb-8 sm:mb-12">
+        <div className="mb-10 sm:mb-14 space-y-3">
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-uai-gradient mb-3"
+            className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-uai-gradient"
           >
             Explore Twins
           </motion.h1>
@@ -174,54 +174,61 @@ export default function Explore() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-white/40 text-lg max-w-xl"
+            className="text-white/45 text-base sm:text-lg max-w-md leading-relaxed"
           >
             Discover AI-powered digital twins and connect with creators.
           </motion.p>
         </div>
 
-        {/* Search & Controls Bar */}
+        {/* Search */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="flex flex-col lg:flex-row gap-4 mb-8"
+          className="mb-5"
         >
-          {/* Search Input */}
-          <div className="relative flex-1 group">
-            <Search 
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-brand-cyan transition-colors" 
-              size={20} 
-            />
-            <input
-              type="text"
-              value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              placeholder="Search by name, bio, or tags..."
-              className="w-full pl-12 pr-4 py-3.5 bg-white/[0.03] border border-white/10 rounded-2xl 
-                         text-white placeholder:text-white/30 
-                         focus:outline-none focus:border-brand-cyan/50 focus:bg-white/[0.05]
-                         transition-all"
-            />
-            {filters.search && (
-              <button
-                onClick={() => setFilters(prev => ({ ...prev, search: '' }))}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-              >
-                <X size={18} />
-              </button>
-            )}
+          <div className="max-w-2xl mx-auto w-full">
+            <div className="relative group">
+              <Search 
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-brand-cyan transition-colors" 
+                size={20} 
+              />
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                placeholder="Search by name, bio, or tags..."
+                className="w-full pl-12 pr-12 py-4 bg-white/[0.02] border border-white/5 rounded-2xl 
+                           text-white placeholder:text-white/30 
+                           focus:outline-none focus:border-brand-cyan/40 focus:bg-white/[0.03]
+                           transition-all"
+              />
+              {filters.search && (
+                <button
+                  onClick={() => setFilters(prev => ({ ...prev, search: '' }))}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
           </div>
+        </motion.div>
 
-          {/* Controls */}
-          <div className="flex gap-3">
-            {/* Filter Toggle */}
+        {/* Controls */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8 sm:mb-10"
+        >
+          <div className="flex justify-start">
             <Button
               variant="secondary"
               size="md"
               onClick={() => setShowFilters(!showFilters)}
               leftIcon={<SlidersHorizontal size={18} />}
-              className="relative"
+              className="relative border-white/5 bg-white/[0.02]"
             >
               Filters
               {activeFiltersCount > 0 && (
@@ -230,15 +237,16 @@ export default function Explore() {
                 </span>
               )}
             </Button>
+          </div>
 
-            {/* Sort Dropdown */}
+          <div className="flex items-center justify-start sm:justify-end gap-3">
             <div className="relative">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="appearance-none w-full h-full px-4 pr-10 bg-white/[0.03] border border-white/10 rounded-2xl
+                className="appearance-none w-full h-full px-4 pr-10 bg-white/[0.02] border border-white/5 rounded-2xl
                            text-white text-sm font-medium
-                           focus:outline-none focus:border-brand-cyan/50 focus:bg-white/[0.05]
+                           focus:outline-none focus:border-brand-cyan/40 focus:bg-white/[0.03]
                            transition-all cursor-pointer"
               >
                 <option value="recent" className="bg-[#0f172a]">Most Recent</option>
@@ -248,8 +256,7 @@ export default function Explore() {
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" size={16} />
             </div>
 
-            {/* View Mode Toggle */}
-            <div className="hidden sm:flex bg-white/[0.03] border border-white/10 rounded-2xl p-1">
+            <div className="hidden sm:flex bg-white/[0.02] border border-white/5 rounded-2xl p-1">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2.5 rounded-xl transition-all ${
@@ -275,13 +282,13 @@ export default function Explore() {
                 }`}
                 aria-label="List view"
               >
-                <div className="flex flex-col gap-0.5 w-4 h-4 justify-center">
-                  <div className="h-0.5 bg-current rounded-full" />
-                  <div className="h-0.5 bg-current rounded-full" />
-                  <div className="h-0.5 bg-current rounded-full" />
-                </div>
-              </button>
-            </div>
+                  <div className="flex flex-col gap-0.5 w-4 h-4 justify-center">
+                    <div className="h-0.5 bg-current rounded-full" />
+                    <div className="h-0.5 bg-current rounded-full" />
+                    <div className="h-0.5 bg-current rounded-full" />
+                  </div>
+                </button>
+          </div>
           </div>
         </motion.div>
 
@@ -292,12 +299,12 @@ export default function Explore() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden mb-8"
+              className="overflow-hidden mb-10"
             >
-              <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl space-y-6">
+              <div className="p-6 sm:p-7 bg-white/[0.02] border border-white/5 rounded-2xl space-y-6">
                 {/* Tags Filter */}
                 {allTags.length > 0 && (
-                  <div>
+                  <div className="space-y-3">
                     <label className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3 block">
                       Tags
                     </label>
@@ -309,7 +316,7 @@ export default function Explore() {
                           className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
                             filters.tags.includes(tag)
                               ? 'bg-brand-cyan text-black border-brand-cyan'
-                              : 'bg-white/5 text-white/60 border-white/10 hover:border-white/20'
+                              : 'bg-white/5 text-white/60 border-white/5 hover:border-white/10'
                           }`}
                         >
                           {tag}
@@ -320,9 +327,9 @@ export default function Explore() {
                 )}
 
                 {/* Other Filters */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
                   {/* Has Avatar */}
-                  <div>
+                  <div className="space-y-3">
                     <label className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3 block">
                       Profile Picture
                     </label>
@@ -338,7 +345,7 @@ export default function Explore() {
                           className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
                             filters.hasAvatar === value
                               ? 'bg-brand-cyan/20 text-brand-cyan border-brand-cyan/30'
-                              : 'bg-white/5 text-white/60 border-white/10 hover:border-white/20'
+                              : 'bg-white/5 text-white/60 border-white/5 hover:border-white/10'
                           }`}
                         >
                           {label}
@@ -348,7 +355,7 @@ export default function Explore() {
                   </div>
 
                   {/* Has Bio */}
-                  <div>
+                  <div className="space-y-3">
                     <label className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3 block">
                       Bio
                     </label>
@@ -364,7 +371,7 @@ export default function Explore() {
                           className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
                             filters.hasBio === value
                               ? 'bg-brand-cyan/20 text-brand-cyan border-brand-cyan/30'
-                              : 'bg-white/5 text-white/60 border-white/10 hover:border-white/20'
+                              : 'bg-white/5 text-white/60 border-white/5 hover:border-white/10'
                           }`}
                         >
                           {label}
@@ -374,15 +381,15 @@ export default function Explore() {
                   </div>
 
                   {/* Knowledge Entries */}
-                  <div>
+                  <div className="space-y-3">
                     <label className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3 block">
                       Knowledge Entries
                     </label>
                     <select
                       value={filters.minKnowledge}
                       onChange={(e) => setFilters(prev => ({ ...prev, minKnowledge: Number(e.target.value) }))}
-                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm
-                                 focus:outline-none focus:border-brand-cyan/50 transition-all"
+                      className="w-full px-3 py-2 bg-white/5 border border-white/5 rounded-xl text-white text-sm
+                                 focus:outline-none focus:border-brand-cyan/40 transition-all"
                     >
                       <option value={0} className="bg-[#0f172a]">Any amount</option>
                       <option value={5} className="bg-[#0f172a]">5+ entries</option>
@@ -394,7 +401,7 @@ export default function Explore() {
 
                 {/* Clear Filters */}
                 {activeFiltersCount > 0 && (
-                  <div className="pt-4 border-t border-white/10">
+                  <div className="pt-4 border-t border-white/5">
                     <button
                       onClick={clearFilters}
                       className="text-sm text-white/40 hover:text-white/60 transition-colors flex items-center gap-2"
@@ -410,7 +417,7 @@ export default function Explore() {
         </AnimatePresence>
 
         {/* Results Count */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8">
           <p className="text-white/40 text-sm">
             {loading ? (
               'Loading...'
@@ -433,7 +440,7 @@ export default function Explore() {
         {loading ? (
           <div className={viewMode === 'grid' 
             ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            : "space-y-4"
+            : "space-y-5"
           }>
             {[...Array(8)].map((_, i) => (
               <div 
@@ -447,7 +454,7 @@ export default function Explore() {
         ) : (
           <div className={viewMode === 'grid'
             ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            : "space-y-4"
+            : "space-y-5"
           }>
             <AnimatePresence mode="popLayout">
               {filteredProfiles.map((profile, index) => (
@@ -477,7 +484,7 @@ export default function Explore() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-20"
           >
-            <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-white/[0.03] border border-white/10 flex items-center justify-center">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-white/[0.02] border border-white/5 flex items-center justify-center">
               <Search className="text-white/20" size={32} />
             </div>
             <h3 className="text-xl font-bold text-white mb-2">No twins found</h3>
@@ -499,13 +506,13 @@ function ProfileCard({ profile }: { profile: UserProfile }) {
   return (
     <Link
       to={`/p/${profile.username}`}
-      className="group block h-full p-6 bg-white/[0.02] border border-white/10 rounded-3xl 
-                 hover:border-brand-cyan/30 hover:bg-white/[0.04]
+      className="group block h-full p-6 bg-white/[0.02] border border-white/5 rounded-3xl 
+                 hover:-translate-y-1 hover:border-brand-cyan/40 hover:bg-white/[0.03]
                  transition-all duration-300"
     >
       {/* Avatar */}
       <div className="relative mb-4">
-        <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 group-hover:border-brand-cyan/30 transition-colors">
+        <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/5 group-hover:border-brand-cyan/30 transition-colors">
           {profile.avatarUrl ? (
             <img 
               src={profile.avatarUrl} 
@@ -560,12 +567,12 @@ function ProfileCard({ profile }: { profile: UserProfile }) {
       )}
 
       {/* Stats */}
-      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/5">
-        <div className="flex items-center gap-1.5 text-white/30">
+      <div className="flex items-center gap-4 mt-5 pt-4 border-t border-white/5">
+        <div className="flex items-center gap-1.5 text-white/20">
           <TrendingUp size={12} />
           <span className="text-xs">{profile.analytics?.views || 0}</span>
         </div>
-        <div className="flex items-center gap-1.5 text-white/30">
+        <div className="flex items-center gap-1.5 text-white/20">
           <Clock size={12} />
           <span className="text-xs">{profile.qaPairs?.length || 0}</span>
         </div>
@@ -579,12 +586,12 @@ function ProfileListItem({ profile }: { profile: UserProfile }) {
   return (
     <Link
       to={`/p/${profile.username}`}
-      className="group flex items-center gap-4 p-4 bg-white/[0.02] border border-white/10 rounded-2xl 
-                 hover:border-brand-cyan/30 hover:bg-white/[0.04]
+      className="group flex items-center gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-2xl 
+                 hover:-translate-y-1 hover:border-brand-cyan/40 hover:bg-white/[0.03]
                  transition-all duration-300"
     >
       {/* Avatar */}
-      <div className="w-16 h-16 rounded-xl overflow-hidden border border-white/10 group-hover:border-brand-cyan/30 transition-colors flex-shrink-0">
+      <div className="w-16 h-16 rounded-xl overflow-hidden border border-white/5 group-hover:border-brand-cyan/30 transition-colors flex-shrink-0">
         {profile.avatarUrl ? (
           <img 
             src={profile.avatarUrl} 
@@ -605,7 +612,7 @@ function ProfileListItem({ profile }: { profile: UserProfile }) {
           <h3 className="font-bold text-white group-hover:text-brand-cyan transition-colors truncate">
             {profile.displayName}
           </h3>
-          <span className="text-sm text-white/30 font-mono">@{profile.username}</span>
+          <span className="text-sm text-white/20 font-mono">@{profile.username}</span>
         </div>
         
         {profile.bio && (
@@ -630,7 +637,7 @@ function ProfileListItem({ profile }: { profile: UserProfile }) {
       </div>
 
       {/* Stats */}
-      <div className="hidden sm:flex items-center gap-6 text-white/30">
+      <div className="hidden sm:flex items-center gap-6 text-white/20">
         <div className="flex items-center gap-1.5">
           <TrendingUp size={14} />
           <span className="text-sm">{profile.analytics?.views || 0}</span>

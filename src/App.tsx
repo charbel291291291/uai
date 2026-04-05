@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import Upgrade from './pages/Upgrade';
 import Admin from './pages/Admin';
 import AdminNFC from './pages/AdminNFC';
+import AdminOrders from './pages/AdminOrders';
 import Shop from './pages/Shop';
 import Checkout from './pages/Checkout';
 import CheckoutSuccess from './pages/CheckoutSuccess';
@@ -122,6 +123,14 @@ function AppShell() {
             element={
               <AuthGate>
                 <AdminNFC />
+              </AuthGate>
+            }
+          />
+          <Route
+            path="/admin/orders"
+            element={
+              <AuthGate>
+                <AdminOrders />
               </AuthGate>
             }
           />

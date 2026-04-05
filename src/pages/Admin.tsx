@@ -131,6 +131,11 @@ export default function Admin() {
               <p className="text-white/50">Manage payments, subscriptions, and orders</p>
             </div>
           <div className="flex gap-2">
+            <Link to="/admin/orders">
+              <Button variant="secondary">
+                Orders
+              </Button>
+            </Link>
             <Link to="/admin/nfc">
               <Button variant="secondary">
                 <Package size={18} />

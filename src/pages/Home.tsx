@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Sparkles, Zap, Globe, Shield, ArrowRight,
   CheckCircle2, Package, Layers, Nfc, Download, Smartphone,
@@ -32,9 +32,10 @@ const FEAT_ICONS = [Zap, Globe, Shield, Sparkles];
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Home() {
-  const { theme, setTheme }       = useAuth();
+  const { theme, setTheme } = useAuth();
   const { lang, isRTL }           = useLang();
   const { isInstallable, install } = useInstallPrompt();
+  const navigate = useNavigate();
 
   const tr    = i18n[lang].home;
   const Arrow = isRTL ? <ArrowRight className="rtl-flip shrink-0" size={20} /> : <ArrowRight className="shrink-0" size={20} />;
@@ -172,15 +173,24 @@ export default function Home() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5 mb-8 sm:mb-10">
           {NFC_META.map((p, i) => (
-            <Link 
+            <div
               key={i}
-              to={`/checkout?product=${p.id}`}
-              className="glass-neon rounded-[22px] sm:rounded-[28px] overflow-hidden group cursor-pointer transition-all duration-200 hover:-translate-y-2 hover:shadow-xl block"
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate(`/shop?highlight=${p.id}`)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  navigate(`/shop?highlight=${p.id}`);
+                }
+              }}
+              className="glass-neon rounded-[22px] sm:rounded-[28px] overflow-hidden group cursor-pointer transition-all duration-200 hover:-translate-y-2 hover:border-brand-cyan/40 hover:shadow-xl focus:outline-none focus-visible:border-brand-cyan/40"
             >
               <div className="relative h-36 sm:h-44 overflow-hidden bg-white/5">
                 <img src={p.img} alt={p.name} loading="lazy" decoding="async"
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-cyan/10 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 {/* Price Badge */}
                 <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-brand-accent text-black text-xs font-black">
                   {p.price}
@@ -191,11 +201,11 @@ export default function Home() {
                 <div className="flex items-center justify-between">
                   <span className="text-brand-accent font-bold text-sm">{p.price}</span>
                   <span className="text-white/40 text-xs flex items-center gap-1 group-hover:text-brand-accent transition-colors">
-                    Buy Now →
+                    View in Shop <ArrowRight size={14} />
                   </span>
                 </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
 
@@ -341,3 +351,4 @@ export default function Home() {
     </>
   );
 }
+

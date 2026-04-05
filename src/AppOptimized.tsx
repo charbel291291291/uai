@@ -27,6 +27,7 @@ const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess'));
 const Upgrade = lazy(() => import('./pages/Upgrade'));
 const Admin = lazy(() => import('./pages/Admin'));
 const AdminNFC = lazy(() => import('./pages/AdminNFC'));
+const AdminOrders = lazy(() => import('./pages/AdminOrders'));
 
 export type NeonTheme = 'cyber-purple' | 'electric-blue' | 'gold-glow' | 'cyber-green';
 
@@ -121,6 +122,14 @@ function AppShell() {
               element={
                 <AuthGate>
                   <AdminNFC />
+                </AuthGate>
+              }
+            />
+            <Route
+              path="/admin/orders"
+              element={
+                <AuthGate>
+                  <AdminOrders />
                 </AuthGate>
               }
             />
