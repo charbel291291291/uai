@@ -690,7 +690,7 @@ export const ecommerceCheckoutService = {
     try {
       debugCheckoutLog('RPC request', input);
 
-      const { data, error } = await supabase.rpc('create_order_with_items', {
+      const { data, error } = await supabase.rpc('create_order_full', {
         p_user_id: input.userId,
         p_items: input.items,
         p_address_id: input.addressId,

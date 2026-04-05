@@ -111,7 +111,10 @@ export default function ProductCard({
           </button>
 
           <button
-            onClick={() => onBuyNow(product)}
+            onClick={(event) => {
+              event.stopPropagation();
+              onBuyNow(product);
+            }}
             disabled={isBuyingNow || (product.stock_quantity === 0)}
             className="w-full py-3 rounded-lg font-bold border border-white/15 bg-white/5 text-white transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
           >

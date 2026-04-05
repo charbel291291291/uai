@@ -62,7 +62,6 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
   const location = useLocation();
   const locationState = location.state as CheckoutLocationState | null;
   const buyNowFromState = locationState?.buyNowItem ?? null;
-  const isBuyNowRef = useRef(!!buyNowFromState);
   const activeOrderRef = useRef<string | null>(null);
 
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -83,8 +82,8 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const isBuyNowCheckout = isBuyNowRef.current;
-  const safeCartItems = isBuyNowRef.current ? [] : cartItems;
+  const isBuyNowCheckout = !!buyNowFromState;
+  const safeCartItems = isBuyNowCheckout ? [] : cartItems;
 
   const itemsToCheckout = useMemo<CheckoutDisplayItem[]>(
     () => {
@@ -122,11 +121,11 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
   }, [buyNowFromState, itemsToCheckout]);
 
   useEffect(() => {
-    if (isBuyNowRef.current) {
+    if (isBuyNowCheckout) {
       clearPendingBuyNowItem();
       window.localStorage.removeItem('cart');
     }
-  }, []);
+  }, [isBuyNowCheckout]);
 
   useEffect(() => {
     if (!user) {
@@ -171,7 +170,7 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
     try {
       debugCheckoutLog('initialize checkout', {
         buyNowFromState,
-        isBuyNowCheckout: isBuyNowRef.current,
+        isBuyNowCheckout,
         userId: user.id,
       });
 
@@ -189,13 +188,13 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
         }
       }
 
-      if (isBuyNowRef.current) {
+      if (isBuyNowCheckout) {
         console.log('🚫 BLOCKING CART LOAD (BUY NOW MODE)');
         setCartItems([]);
         return;
       }
 
-      if (!isBuyNowRef.current) {
+      if (!isBuyNowCheckout) {
         // TEMP DISABLE
         // const cartResult = await cartService.getCart(user.id);
         const cartResult = await cartService.getCart(user.id);
@@ -317,9 +316,9 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
 
     try {
       const addressId = await ensureAddressId();
-      if (selectedPaymentMethod?.requiresProof) {
-        await uploadPaymentProof();
-      }
+      const proofImageUrl = selectedPaymentMethod?.requiresProof
+        ? await uploadPaymentProof()
+        : null;
 
       console.log('ITEMS FULL:', itemsToCheckout);
 
@@ -339,11 +338,29 @@ export function useCheckout({ user, paymentMethods }: UseCheckoutParams) {
         throw new Error('Invalid items: missing product_id or quantity');
       }
 
-      debugCheckoutLog('place order input', { clientOrderId, rpcItems, addressId });
+      debugCheckoutLog('place order input', {
+        clientOrderId,
+        rpcItems,
+        addressId,
+        paymentMethod,
+        deliveryFee,
+        proofImageUrl,
+      });
+      console.log('RPC INPUT:', {
+        user: user.id,
+        items: rpcItems,
+        address: addressId,
+      });
       console.log('🚨 SENDING TO RPC:', rpcItems);
 
-      const { data, error: orderError } = await supabase.rpc('create_order_with_items', {
+      const { data, error: orderError } = await supabase.rpc('create_order_full', {
+        p_user_id: user.id,
         p_items: rpcItems,
+        p_address_id: addressId,
+        p_payment_method: paymentMethod,
+        p_reference_number: null,
+        p_delivery_fee_cents: deliveryFee,
+        p_proof_image_url: proofImageUrl,
         p_client_order_id: clientOrderId,
       });
 

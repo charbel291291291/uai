@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CreditCard, MapPin, Truck, Upload, X } from 'lucide-react';
 import { useAuth } from '../App';
 import { Card } from '../components/ui/Card';
@@ -14,6 +15,8 @@ const PAYMENT_METHODS = [
 ];
 
 export default function Checkout() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const {
     addresses,
@@ -46,6 +49,12 @@ export default function Checkout() {
   const missingProof = Boolean(selectedPaymentMethod?.requiresProof && !proofFile);
   const isDisabled = isLoading || isEmpty || missingAddress || missingProof;
   const finalDisabled = isDisabled;
+
+  useEffect(() => {
+    if (location.search) {
+      navigate('/checkout', { replace: true, state: location.state });
+    }
+  }, [location.search, location.state, navigate]);
 
   if (pageLoading) {
     return (
