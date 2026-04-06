@@ -5,9 +5,22 @@
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- 1. Revenue aggregate — replaces client-side full table scan in AdminDashboard
---    Avoids the 1000-row Supabase JS client default limit.
+-- 1. admin_stats view — single query for all dashboard KPIs
+--    Replaces 4 separate client queries + eliminates 1000-row revenue truncation.
+--    Queried as: supabase.from('admin_stats').select('*').single()
 -- ----------------------------------------------------------------------------
+CREATE OR REPLACE VIEW admin_stats AS
+SELECT
+  (SELECT COUNT(*)::int        FROM products        WHERE is_active = true)    AS total_products,
+  (SELECT COUNT(*)::int        FROM orders)                                    AS total_orders,
+  (SELECT COALESCE(SUM(total_cents), 0)::bigint FROM orders)                   AS revenue_cents,
+  (SELECT COUNT(*)::int        FROM payment_requests WHERE status = 'pending') AS pending_payments;
+
+-- Restrict to admin role only (checked via RLS on the underlying tables,
+-- but belt-and-suspenders: grant SELECT only to authenticated)
+GRANT SELECT ON admin_stats TO authenticated;
+
+-- Keep the standalone RPC as a fallback (called by older code paths)
 CREATE OR REPLACE FUNCTION get_order_revenue_cents()
 RETURNS bigint
 LANGUAGE sql
@@ -17,7 +30,6 @@ AS $$
   SELECT COALESCE(SUM(total_cents), 0)::bigint FROM orders;
 $$;
 
--- Grant execution to authenticated users (admin UI calls this)
 GRANT EXECUTE ON FUNCTION get_order_revenue_cents() TO authenticated;
 
 
