@@ -29,6 +29,7 @@ import SecureLogger from './utils/SecureLogger';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminRoute from './components/AdminRoute';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import Analytics from './pages/Analytics';
 import { ErrorBoundary } from './error-handling-system/ErrorBoundary';
 
 export type NeonTheme = 'cyber-purple' | 'electric-blue' | 'gold-glow' | 'cyber-green';
@@ -133,6 +134,14 @@ function AppShell() {
             element={
               <AuthGate>
                 <Upgrade />
+              </AuthGate>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <AuthGate>
+                <Analytics />
               </AuthGate>
             }
           />

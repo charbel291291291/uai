@@ -16,6 +16,7 @@ import { Card, StatCard } from '../components/ui/Card';
 import { Input, TextArea } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { SEO } from '../components/SEO';
+import { LeadList, type Lead, type LeadStatus } from '../components/ui/LeadItem';
 
 // ─── Sidebar Navigation ─────────────────────────────────────────────────────
 const sidebarItems = [
@@ -37,7 +38,7 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<Partial<UserProfile>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [leads, setLeads] = useState<any[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
 
   const currentPlan = subscription?.plan || 'free';
@@ -88,6 +89,12 @@ export default function Dashboard() {
 
     void fetchData();
   }, [user]);
+
+  // Lead status update
+  const handleLeadStatusChange = useCallback(async (id: string, status: LeadStatus) => {
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
+    await supabase.from('leads').update({ status }).eq('id', id);
+  }, []);
 
   // Save profile
   const handleSave = useCallback(async () => {
@@ -248,8 +255,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  const tc = profile.themeColor || '#3A86FF';
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -934,37 +939,20 @@ export default function Dashboard() {
                     </Link>
                   </Card>
                 ) : (
-                  <>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <StatCard
-                        label="Profile Views"
-                        value={profile.analytics?.views || 0}
-                        icon={<Eye size={18} />}
-                      />
-                      <StatCard
-                        label="AI Conversations"
-                        value={profile.analytics?.chats || 0}
-                        icon={<MessageSquare size={18} />}
-                      />
-                      <StatCard
-                        label="Messages Exchanged"
-                        value={profile.analytics?.messages || 0}
-                        icon={<TrendingUp size={18} />}
-                      />
-                      <StatCard
-                        label="Leads Captured"
-                        value={leads.length}
-                        icon={<Users size={18} />}
-                      />
+                  <Card className="p-12 text-center">
+                    <div className="w-20 h-20 rounded-full bg-[#3A86FF]/20 flex items-center justify-center mx-auto mb-6">
+                      <BarChart3 className="text-[#3A86FF]" size={40} />
                     </div>
-
-                    <Card>
-                      <h3 className="text-lg font-semibold text-white mb-4">Performance Overview</h3>
-                      <div className="h-64 flex items-center justify-center text-white/30">
-                        <p>Charts coming soon...</p>
-                      </div>
-                    </Card>
-                  </>
+                    <h3 className="text-xl font-bold text-white mb-2">Full Analytics Dashboard</h3>
+                    <p className="text-white/50 mb-6 max-w-md mx-auto">
+                      View profile views, CTA clicks, NFC taps, conversion rates, and more — all in one place.
+                    </p>
+                    <Link to="/analytics">
+                      <Button variant="primary" size="lg" rightIcon={<ChevronRight size={18} />}>
+                        Open Analytics
+                      </Button>
+                    </Link>
+                  </Card>
                 )}
               </motion.div>
             )}
@@ -978,53 +966,7 @@ export default function Dashboard() {
                 exit={{ opacity: 0, y: -20 }}
                 className="space-y-4"
               >
-                <h3 className="text-lg font-semibold text-white">
-                  Leads ({leads.length})
-                </h3>
-
-                {leads.map((lead) => (
-                  <Card key={lead.id}>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm"
-                            style={{ background: `${tc}20`, color: tc }}
-                          >
-                            {(lead.name || lead.phone)[0].toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-medium text-white">{lead.name || 'Anonymous'}</p>
-                            <p className="text-sm text-white/50">{lead.phone}</p>
-                          </div>
-                        </div>
-                        {lead.message && (
-                          <p className="text-sm text-white/60 mt-3 bg-white/5 p-3 rounded-lg">
-                            "{lead.message.slice(0, 100)}{lead.message.length > 100 ? '...' : ''}"
-                          </p>
-                        )}
-                      </div>
-                      <a
-                        href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-[#3A86FF] hover:underline"
-                      >
-                        WhatsApp
-                      </a>
-                    </div>
-                  </Card>
-                ))}
-
-                {leads.length === 0 && (
-                  <Card className="text-center py-12">
-                    <Users size={48} className="mx-auto text-white/20 mb-4" />
-                    <p className="text-white/50">No leads yet</p>
-                    <p className="text-white/30 text-sm mt-2">
-                      Leads appear when visitors share their contact info
-                    </p>
-                  </Card>
-                )}
+                <LeadList leads={leads} onStatusChange={handleLeadStatusChange} />
               </motion.div>
             )}
           </AnimatePresence>

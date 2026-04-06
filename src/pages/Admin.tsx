@@ -202,7 +202,7 @@ export default function Admin() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Link to={ADMIN_ROUTES.NFC_ORDERS}>
+          <Link to="/admin/nfc">
             <Card className="p-6 cursor-pointer hover:border-brand-accent/50 transition-all group">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
