@@ -182,7 +182,7 @@ class OrderService {
         };
       });
 
-      return apiClient.createResponse<NFCOrder[]>(normalizedOrders as NFCOrder[], null);
+      return apiClient.createResponse<NFCOrder[]>(normalizedOrders as unknown as NFCOrder[], null);
     } catch (error: any) {
       return apiClient.createResponse<NFCOrder[]>(null, error);
     }
@@ -253,14 +253,14 @@ class OrderService {
       // Upload proof image
       const fileName = `${data.userId}/${Date.now()}_payment_proof.jpg`;
       const { error: uploadError } = await this.supabase.storage
-        .from('payment-proofs')
+        .from('payment_proofs')
         .upload(fileName, data.proofFile);
 
       if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: { publicUrl } } = this.supabase.storage
-        .from('payment-proofs')
+        .from('payment_proofs')
         .getPublicUrl(fileName);
 
       // Calculate amount
@@ -309,15 +309,20 @@ class OrderService {
   }
 
   // --------------------------------------------------------------------------
-  // Get Pending Payments (Admin)
+  // Get All Payments (Admin) — optionally filtered by status
   // --------------------------------------------------------------------------
-  async getPendingPayments() {
+  async getAllPayments(statusFilter?: string) {
     try {
-      const { data, error } = await this.supabase
+      let query = this.supabase
         .from('payment_requests')
         .select('*')
-        .eq('status', 'pending')
         .order('created_at', { ascending: false });
+
+      if (statusFilter && statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -345,6 +350,13 @@ class OrderService {
     } catch (error: any) {
       return apiClient.createResponse<PaymentRequest[]>(null, error);
     }
+  }
+
+  // --------------------------------------------------------------------------
+  // Get Pending Payments (Admin)
+  // --------------------------------------------------------------------------
+  async getPendingPayments() {
+    return this.getAllPayments('pending');
   }
 
   // --------------------------------------------------------------------------
@@ -447,6 +459,7 @@ export const {
   createPaymentRequest,
   getUserPaymentHistory,
   getPendingPayments,
+  getAllPayments,
   approvePayment,
   rejectPayment,
   getPaymentStats,

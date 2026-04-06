@@ -2,13 +2,9 @@
 // HOOKS INDEX - Centralized hooks exports
 // ============================================================================
 
-// Auth hooks
-export { 
-  useAuth, 
-  useAuthProvider, 
-  useAuthenticated,
-  AuthProvider 
-} from './useAuth';
+// NOTE: Auth is handled by App.tsx's AuthContext — useAuth() is imported directly
+// from '../App'. The hooks/useAuth.tsx file is a legacy parallel system; do not
+// import useAuth from hooks/index — it will throw "must be within AuthProvider".
 
 // Profile hooks
 export { 

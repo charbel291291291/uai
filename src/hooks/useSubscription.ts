@@ -69,8 +69,10 @@ export function useSubscription(userId: string | undefined): UseSubscriptionRetu
           user_id: userId,
           plan: mostRecent.plan,
           status: new Date() > expiresAt ? 'expired' : 'active',
-          current_period_start: approvedAt.toISOString(),
-          current_period_end: expiresAt.toISOString(),
+          started_at: approvedAt.toISOString(),
+          expires_at: expiresAt.toISOString(),
+          payment_request_id: mostRecent.id,
+          auto_renew: false,
           created_at: mostRecent.created_at,
           updated_at: mostRecent.reviewed_at || mostRecent.created_at,
         });
@@ -102,12 +104,12 @@ export function useSubscription(userId: string | undefined): UseSubscriptionRetu
   }, [subscription?.plan]);
 
   // Check if subscription is expired
-  const isExpired = subscription?.status === 'expired' || 
-    (subscription?.current_period_end ? new Date(subscription.current_period_end) < new Date() : false);
+  const isExpired = subscription?.status === 'expired' ||
+    (subscription?.expires_at ? new Date(subscription.expires_at) < new Date() : false);
 
   // Calculate days remaining
-  const daysRemaining = subscription?.current_period_end
-    ? Math.ceil((new Date(subscription.current_period_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  const daysRemaining = subscription?.expires_at
+    ? Math.ceil((new Date(subscription.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
   return {
@@ -204,7 +206,8 @@ export function useAdminPayments(): UseAdminPaymentsReturn {
     setError(null);
 
     try {
-      const { data, error: serviceError } = await orderService.getPendingPayments();
+      // Fetch ALL payment requests so the UI can filter client-side by status
+      const { data, error: serviceError } = await orderService.getAllPayments();
 
       if (serviceError) {
         throw new Error(serviceError.message);

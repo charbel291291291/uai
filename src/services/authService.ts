@@ -1,7 +1,6 @@
-import { apiClient, BruteForceError } from './apiClient';
+import { apiClient } from './apiClient';
 import type { User, AuthError } from '@supabase/supabase-js';
-import { isValidEmail, isPasswordStrong, isValidUsername, generateSecureRandomString } from '../utils/security';
-import { securityConfig } from '../utils/securityConfig';
+import { isValidEmail, isPasswordStrong, isValidUsername } from '../utils/security';
 
 // ============================================================================
 // TYPES
@@ -63,46 +62,41 @@ class AuthService {
   async signUp(data: SignUpData): Promise<AuthResponse> {
     const identifier = this.getIdentifier(data.email);
 
-    return apiClient.executeWithSecurity(
+    const result = await apiClient.executeWithSecurity(
       async () => {
-        // Validate email format
         if (!isValidEmail(data.email)) {
           throw new Error('Invalid email address');
         }
 
-        // Validate password strength
         const passwordCheck = isPasswordStrong(data.password);
         if (!passwordCheck.valid) {
           throw new Error(passwordCheck.issues.join('. '));
         }
 
-        // Validate username if provided
         if (data.metadata?.username && !isValidUsername(data.metadata.username)) {
           throw new Error('Username must be 3-20 characters, alphanumeric and underscores only');
         }
 
-        // Sanitize metadata
         const sanitizedMetadata = data.metadata ? apiClient.sanitizeInput(data.metadata) : undefined;
 
         const { data: authData, error } = await this.supabase.auth.signUp({
           email: data.email,
           password: data.password,
-          options: {
-            data: sanitizedMetadata,
-          },
+          options: { data: sanitizedMetadata },
         });
 
         if (error) throw error;
-
         return { user: authData.user };
       },
-      {
-        identifier,
-        endpointType: 'auth',
-        validateInput: { email: data.email },
-        isSensitive: true,
-      }
+      { identifier, endpointType: 'auth', validateInput: { email: data.email }, isSensitive: true }
     );
+
+    return {
+      user: result.data?.user ?? null,
+      error: result.error as AuthError | null,
+      success: result.success,
+      rateLimit: result.rateLimit,
+    };
   }
 
   // --------------------------------------------------------------------------
@@ -111,9 +105,8 @@ class AuthService {
   async signIn(data: SignInData): Promise<AuthResponse> {
     const identifier = this.getIdentifier(data.email);
 
-    return apiClient.executeWithSecurity(
+    const result = await apiClient.executeWithSecurity(
       async () => {
-        // Validate input
         if (!isValidEmail(data.email)) {
           throw new Error('Invalid email address');
         }
@@ -124,16 +117,17 @@ class AuthService {
         });
 
         if (error) throw error;
-
         return { user: authData.user };
       },
-      {
-        identifier,
-        endpointType: 'auth',
-        validateInput: { email: data.email },
-        isSensitive: true,
-      }
+      { identifier, endpointType: 'auth', validateInput: { email: data.email }, isSensitive: true }
     );
+
+    return {
+      user: result.data?.user ?? null,
+      error: result.error as AuthError | null,
+      success: result.success,
+      rateLimit: result.rateLimit,
+    };
   }
 
   // --------------------------------------------------------------------------
@@ -144,7 +138,8 @@ class AuthService {
       const { data, error } = await this.supabase.auth.signInWithOAuth({
         provider: provider.provider,
         options: {
-          redirectTo: provider.redirectTo || `${window.location.origin}/dashboard`,
+          // Use origin only — AppShell reads auth_redirect from localStorage to restore destination
+      redirectTo: provider.redirectTo || window.location.origin,
         },
       });
 
@@ -251,7 +246,7 @@ class AuthService {
     );
 
     return {
-      error: result.error,
+      error: result.error as AuthError | null,
       success: result.success,
     };
   }

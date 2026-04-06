@@ -268,25 +268,36 @@ class AnalyticsService {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
+      // Use server-side aggregation via RPC to avoid 1000-row Supabase client limit
       const { data, error } = await this.supabase
-        .from('analytics_events')
-        .select('event_type')
-        .eq('profile_id', profileId)
-        .gte('created_at', startDate.toISOString());
+        .rpc('get_analytics_summary', {
+          p_profile_id: profileId,
+          p_start_date: startDate.toISOString(),
+        });
 
-      if (error) throw error;
+      if (error) {
+        // Fallback: fetch with explicit high limit if RPC not available
+        const { data: events, error: fallbackError } = await this.supabase
+          .from('analytics_events')
+          .select('event_type')
+          .eq('profile_id', profileId)
+          .gte('created_at', startDate.toISOString())
+          .limit(10000);
 
-      // Aggregate counts
-      const summary = {
-        total_events: data?.length || 0,
-        page_views: data?.filter(e => e.event_type === 'page_view').length || 0,
-        profile_views: data?.filter(e => e.event_type === 'profile_view').length || 0,
-        chat_starts: data?.filter(e => e.event_type === 'chat_started').length || 0,
-        cta_clicks: data?.filter(e => e.event_type === 'cta_click').length || 0,
-        nfc_taps: data?.filter(e => e.event_type === 'nfc_tap').length || 0,
-      };
+        if (fallbackError) throw fallbackError;
 
-      return apiClient.createResponse(summary, null);
+        const summary = {
+          total_events: events?.length || 0,
+          page_views: events?.filter(e => e.event_type === 'page_view').length || 0,
+          profile_views: events?.filter(e => e.event_type === 'profile_view').length || 0,
+          chat_starts: events?.filter(e => e.event_type === 'chat_started').length || 0,
+          cta_clicks: events?.filter(e => e.event_type === 'cta_click').length || 0,
+          nfc_taps: events?.filter(e => e.event_type === 'nfc_tap').length || 0,
+        };
+        return apiClient.createResponse(summary, null);
+      }
+
+      return apiClient.createResponse(data, null);
     } catch (error: any) {
       return apiClient.createResponse(null, error);
     }

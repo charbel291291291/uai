@@ -70,7 +70,6 @@ export interface OrderStatusHistory {
 export interface CheckoutItemInput {
   product_id: string;
   quantity: number;
-  price: number;
 }
 
 const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
@@ -625,23 +624,27 @@ export const bundleService = {
         return { data: null, error };
       }
 
-      // Fetch items for each bundle
-      const bundlesWithItems = await Promise.all(
-        bundles.map(async (bundle) => {
-          const { data: items } = await supabase
-            .from('bundle_items')
-            .select(`
-              quantity,
-              product:products(*)
-            `)
-            .eq('bundle_id', bundle.id);
+      // Single query: fetch all bundle items with products in one round-trip
+      const bundleIds = bundles.map((b) => b.id);
+      const { data: allItems } = await supabase
+        .from('bundle_items')
+        .select(`
+          bundle_id,
+          quantity,
+          product:products(*)
+        `)
+        .in('bundle_id', bundleIds);
 
-          return {
-            ...bundle,
-            items: items || [],
-          };
-        })
-      );
+      const itemsByBundle = new Map<string, typeof allItems>([]);
+      for (const item of allItems || []) {
+        const existing = itemsByBundle.get(item.bundle_id) || [];
+        itemsByBundle.set(item.bundle_id, [...existing, item]);
+      }
+
+      const bundlesWithItems = bundles.map((bundle) => ({
+        ...bundle,
+        items: itemsByBundle.get(bundle.id) || [],
+      }));
 
       return { data: bundlesWithItems, error: null };
     } catch (error) {
@@ -744,63 +747,42 @@ export const ecommerceCheckoutService = {
         return { data: null, error: new Error('Invalid delivery address') };
       }
 
-      // Calculate totals
-      const subtotal = cart.reduce((sum, item) => {
-        return sum + (item.product?.price_cents || 0) * item.quantity;
-      }, 0);
-
       // Get delivery fee
       const { fee: deliveryFee } = await deliveryService.getDeliveryFee(
         address.city,
         address.area || undefined
       );
 
-      const totalCents = subtotal + deliveryFee;
+      // Require proof for non-COD payment methods
+      if (paymentMethod !== 'cod' && !proofImageUrl) {
+        return {
+          data: null,
+          error: new Error('Payment proof is required for this payment method'),
+        };
+      }
 
-      // Create order using local payment service
       const items = cart.map(item => ({
         product_id: item.product_id,
         quantity: item.quantity,
       }));
 
-      let orderResult;
+      // Route all checkout through create_order_full
+      const result = await this.createOrderWithItems({
+        userId,
+        items,
+        addressId,
+        paymentMethod,
+        deliveryFeeCents: deliveryFee,
+        referenceNumber,
+        proofImageUrl,
+      });
 
-      if (paymentMethod === 'cod') {
-        // COD checkout
-        orderResult = await supabase.rpc('create_cod_order', {
-          p_user_id: userId,
-          p_items: items,
-          p_address_id: addressId,
-          p_delivery_fee_cents: deliveryFee,
-        });
-      } else {
-        // Local payment with proof (OMT/Wish/Bank)
-        if (!proofImageUrl) {
-          return { 
-            data: null, 
-            error: new Error('Payment proof is required for this payment method') 
-          };
-        }
-
-        orderResult = await supabase.rpc('create_local_payment_order', {
-          p_user_id: userId,
-          p_items: items,
-          p_payment_method: paymentMethod,
-          p_reference_number: referenceNumber,
-          p_proof_image_url: proofImageUrl,
-          p_address_id: addressId,
-          p_delivery_fee_cents: deliveryFee,
-        });
-      }
-
-      if (orderResult.error) {
-        throw orderResult.error;
-      }
+      if (result.error) throw result.error;
 
       // Clear cart after successful order
       await cartService.clearCart(userId);
 
-      return { data: orderResult.data, error: null };
+      return { data: result.data, error: null };
     } catch (error) {
       console.error('[EcommerceCheckout] Error:', error);
       return { data: null, error };

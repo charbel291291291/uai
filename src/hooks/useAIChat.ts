@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
-import { sendMessageToAI, getConversationHistory, type ConversationMessage, type AIResponse } from '../services/aiService';
+import { useState, useCallback, useEffect } from 'react';
+import { sendMessageToAI, getConversationHistory, clearConversationHistory, type ConversationMessage, type AIResponse } from '../services/aiService';
+import aiService from '../services/aiService';
 
 interface UseAIChatReturn {
   messages: ConversationMessage[];
@@ -9,7 +10,11 @@ interface UseAIChatReturn {
   clearHistory: () => void;
 }
 
-export function useAIChat(): UseAIChatReturn {
+export function useAIChat(userId?: string | null): UseAIChatReturn {
+  // Bind singleton to current user — clears history automatically on user switch
+  useEffect(() => {
+    aiService.setUser(userId ?? null);
+  }, [userId]);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);

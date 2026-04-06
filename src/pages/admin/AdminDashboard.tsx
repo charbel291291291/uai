@@ -56,27 +56,26 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const [productsRes, ordersRes, paymentsRes] = await Promise.all([
+        const [productsRes, ordersRes, revenueRes, paymentsRes] = await Promise.all([
           supabase
             .from('products')
             .select('id', { count: 'exact', head: true })
             .eq('is_active', true),
           supabase
             .from('orders')
-            .select('total_cents'),
+            .select('id', { count: 'exact', head: true }),
+          // Server-side SUM avoids the 1000-row Supabase client limit
+          supabase.rpc('get_order_revenue_cents'),
           supabase
             .from('payment_requests')
             .select('id', { count: 'exact', head: true })
             .eq('status', 'pending'),
         ]);
 
-        const totalRevenue = ((ordersRes.data as { total_cents: number }[] | null) || [])
-          .reduce((sum, o) => sum + (o.total_cents || 0), 0);
-
         setStats({
           totalProducts: productsRes.count ?? 0,
-          totalOrders: ordersRes.data?.length ?? 0,
-          totalRevenue: totalRevenue / 100,
+          totalOrders: ordersRes.count ?? 0,
+          totalRevenue: ((revenueRes.data as number | null) ?? 0) / 100,
           pendingPayments: paymentsRes.count ?? 0,
         });
       } catch {

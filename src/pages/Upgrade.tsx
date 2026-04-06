@@ -50,27 +50,34 @@ const PLANS = [
   },
 ];
 
+// ─── Payment account details ────────────────────────────────────────────────
+// Update these with your real account numbers before going live.
+const WHISH_ACCOUNT   = import.meta.env.VITE_PAYMENT_WHISH   || 'Contact us for payment details';
+const OMT_ACCOUNT     = import.meta.env.VITE_PAYMENT_OMT     || 'Contact us for payment details';
+const BANK_ACCOUNT    = import.meta.env.VITE_PAYMENT_BANK    || 'Contact us for payment details';
+const BANK_IBAN       = import.meta.env.VITE_PAYMENT_IBAN    || '';
+
 const PAYMENT_METHODS = [
   {
     id: 'whish' as PaymentMethod,
     label: 'Whish Money',
     icon: Wallet,
-    account: '03/123 456',
+    account: WHISH_ACCOUNT,
     note: 'Send exact amount in USD',
   },
   {
     id: 'omt' as PaymentMethod,
     label: 'OMT',
     icon: Banknote,
-    account: 'Lebanon / Beirut / 03/123 456',
+    account: OMT_ACCOUNT,
     note: 'Receiver: UAi by eyedeaz',
   },
   {
     id: 'bank' as PaymentMethod,
     label: 'Bank Transfer',
     icon: Building2,
-    account: 'BDL - 1234567890',
-    note: 'IBAN: LB12 1234 5678 9012 3456 7890 1234',
+    account: BANK_ACCOUNT,
+    note: BANK_IBAN ? `IBAN: ${BANK_IBAN}` : '',
   },
 ];
 

@@ -154,16 +154,6 @@ export interface Message {
   timestamp: number;
 }
 
-export interface ContactMessage {
-  id: string;
-  toUid: string;
-  fromName: string;
-  fromEmail: string;
-  subject?: string;
-  message: string;
-  createdAt: string;
-}
-
 // Subscription System Types
 export type PaymentMethod = 'whish' | 'omt' | 'bank';
 export type PaymentStatus = 'pending' | 'approved' | 'rejected';
@@ -210,24 +200,26 @@ export const PLAN_PRICES: Record<Exclude<UserPlan, 'free'>, { monthly: number; y
   elite: { monthly: 10, yearly: 100 },
 };
 
+// Payment account details are sourced from environment variables.
+// Set VITE_PAYMENT_WHISH, VITE_PAYMENT_OMT, VITE_PAYMENT_BANK, VITE_PAYMENT_IBAN in .env
 export const PAYMENT_METHODS: { id: PaymentMethod; label: string; icon: string; instructions: string }[] = [
   {
     id: 'whish',
     label: 'Whish Money',
     icon: 'Wallet',
-    instructions: 'Send to Whish Money account: 03/123 456',
+    instructions: `Send to Whish Money account: ${import.meta.env.VITE_PAYMENT_WHISH || 'Contact us for details'}`,
   },
   {
     id: 'omt',
     label: 'OMT',
     icon: 'Banknote',
-    instructions: 'Send via OMT to: Lebanon / Beirut / Phone: 03/123 456',
+    instructions: `Send via OMT to: ${import.meta.env.VITE_PAYMENT_OMT || 'Contact us for details'}`,
   },
   {
     id: 'bank',
     label: 'Bank Transfer',
     icon: 'Building2',
-    instructions: 'Bank: BDL\nAccount: 1234567890\nIBAN: LB12 1234 5678 9012 3456 7890 1234',
+    instructions: `Bank transfer details: ${import.meta.env.VITE_PAYMENT_BANK || 'Contact us for details'}${import.meta.env.VITE_PAYMENT_IBAN ? `\nIBAN: ${import.meta.env.VITE_PAYMENT_IBAN}` : ''}`,
   },
 ];
 

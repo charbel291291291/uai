@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Upload, Link, X, Check, Loader2, Pencil, Trash2, User } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import confetti from 'canvas-confetti';
@@ -30,6 +30,14 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup success timer on unmount to prevent setState on unmounted component
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
+  }, []);
 
   // Fallback Initials Avatar
   const getInitials = (name: string) => {
@@ -121,16 +129,17 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({
     }
   };
 
-  const triggerSuccess = () => {
+  const triggerSuccess = useCallback(() => {
     setIsSuccess(true);
     confetti({
       particleCount: 100,
       spread: 70,
       origin: { y: 0.6 },
-      colors: [themeColor, '#ffffff']
+      colors: [themeColor, '#ffffff'],
     });
-    setTimeout(() => setIsSuccess(false), 3000);
-  };
+    if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    successTimerRef.current = setTimeout(() => setIsSuccess(false), 3000);
+  }, [themeColor]);
 
   const removeAvatar = async () => {
     setPreviewUrl(undefined);

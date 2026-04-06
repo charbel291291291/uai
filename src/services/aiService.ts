@@ -148,6 +148,7 @@ const callAIAPI = async (
 export class AIService {
   private static instance: AIService;
   private conversationHistory: ConversationMessage[] = [];
+  private currentUserId: string | null = null;
 
   private constructor() {}
 
@@ -156,6 +157,17 @@ export class AIService {
       AIService.instance = new AIService();
     }
     return AIService.instance;
+  }
+
+  /**
+   * Bind the service to a specific user session.
+   * Clears history automatically when user changes to prevent cross-user bleed.
+   */
+  setUser(userId: string | null): void {
+    if (userId !== this.currentUserId) {
+      this.conversationHistory = [];
+      this.currentUserId = userId;
+    }
   }
 
   /**

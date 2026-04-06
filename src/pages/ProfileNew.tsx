@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
+import globalRateLimiter, { RateLimitPresets } from '../utils/rateLimiter';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../supabase';
@@ -116,15 +117,11 @@ export default function Profile() {
           .eq('profile_id', mappedProfile.uid);
         setLikeCount(count || 0);
 
-        // Track view
+        // Track view — atomic SQL increment avoids read-modify-write race condition
         const sessionKey = `viewed_${mappedProfile.uid}`;
         if (!sessionStorage.getItem(sessionKey)) {
           sessionStorage.setItem(sessionKey, '1');
-          const newAnalytics = {
-            ...mappedProfile.analytics,
-            views: (mappedProfile.analytics?.views || 0) + 1,
-          };
-          await supabase.from('profiles').update({ analytics: newAnalytics }).eq('id', mappedProfile.uid);
+          await supabase.rpc('increment_profile_views', { profile_id: mappedProfile.uid });
         }
       } catch (err) {
         console.error('Fetch error:', err);
@@ -135,6 +132,9 @@ export default function Profile() {
     };
 
     fetchProfile();
+
+    // Restore tab title when navigating away from this profile
+    return () => { document.title = 'UAi'; };
   }, [username]);
 
   useEffect(() => {
@@ -162,6 +162,19 @@ export default function Profile() {
   const handleSendMessage = async (text?: string) => {
     const msgText = text || input;
     if (!msgText.trim() || !profile) return;
+
+    // Client-side rate limit: 10 AI messages per minute per visitor session
+    const visitorKey = `ai_chat:${profile.uid}`;
+    if (!globalRateLimiter.isAllowed(visitorKey, RateLimitPresets.aiChat)) {
+      setMessages((prev) => [...prev, {
+        id: Date.now().toString(),
+        text: "You're sending messages too quickly. Please wait a moment before continuing.",
+        sender: 'ai' as const,
+        timestamp: Date.now(),
+      }]);
+      return;
+    }
+
     if (!text) setInput('');
 
     const userMsg: Message = {

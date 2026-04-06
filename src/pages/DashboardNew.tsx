@@ -74,12 +74,13 @@ export default function Dashboard() {
 
     const fetchData = async () => {
       try {
-        const [{ data: leadsData }, { data: messagesData }] = await Promise.all([
+        const [{ data: leadsData }, { data: conversationsData }] = await Promise.all([
           supabase.from('leads').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }),
-          supabase.from('messages').select('*').eq('profile_id', user.id).order('created_at', { ascending: false }),
+          // Messages live inside ai_conversations.messages JSONB — not a separate table
+          supabase.from('ai_conversations').select('id, messages, visitor_name, last_message_at').eq('profile_id', user.id).order('last_message_at', { ascending: false }),
         ]);
         if (leadsData) setLeads(leadsData);
-        if (messagesData) setMessages(messagesData);
+        if (conversationsData) setMessages(conversationsData);
       } catch {
         // Non-fatal — leads/messages are optional features
       }

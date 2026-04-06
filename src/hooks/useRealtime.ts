@@ -3,7 +3,7 @@ import { supabase } from '../supabase';
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 // Hook for subscribing to realtime changes on any table
-export function useRealtimeTable<T>(
+export function useRealtimeTable<T extends Record<string, unknown>>(
   table: string,
   filter: { column: string; value: string } | null,
   onChange: (payload: RealtimePostgresChangesPayload<T>) => void
@@ -214,14 +214,9 @@ export function useRealtimeNotifications(userId: string | undefined) {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          setNotifications((prev) =>
-            prev.map((n) => (n.id === payload.new.id ? payload.new : n))
-          );
-          // Recalculate unread count
+          // Single setState: update the item and recalculate unread count atomically
           setNotifications((prev) => {
-            const updated = prev.map((n) =>
-              n.id === payload.new.id ? payload.new : n
-            );
+            const updated = prev.map((n) => (n.id === payload.new.id ? payload.new : n));
             setUnreadCount(updated.filter((n) => !n.read).length);
             return updated;
           });
@@ -253,8 +248,16 @@ export function useRealtimeNotifications(userId: string | undefined) {
   }, [userId]);
 
   const dismissNotification = useCallback(async (notificationId: string) => {
-    await supabase.from('notifications').delete().eq('id', notificationId);
-    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    // Soft-dismiss: mark as read rather than permanently deleting
+    await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', notificationId);
+    setNotifications((prev) => {
+      const updated = prev.map((n) => n.id === notificationId ? { ...n, read: true } : n);
+      setUnreadCount(updated.filter((n) => !n.read).length);
+      return updated;
+    });
   }, []);
 
   return {

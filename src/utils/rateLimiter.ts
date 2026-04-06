@@ -168,8 +168,13 @@ class RateLimiter {
   }
 }
 
-// Singleton instance
+// Singleton instance — cleanup interval registered once at module init
 const globalRateLimiter = new RateLimiter();
+
+// Stop the cleanup interval when the tab unloads to prevent memory leaks
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => globalRateLimiter.stop(), { once: true });
+}
 
 /**
  * Create a rate limit checker with custom config

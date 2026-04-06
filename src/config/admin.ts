@@ -24,12 +24,10 @@ export enum AdminPermission {
 }
 
 function getRoleFromUser(user: AuthLikeUser): string | null {
+  // Only trust app_metadata — it is server-writable only (Supabase service role).
+  // user_metadata is user-writable via updateUser() and MUST NOT be used for auth.
   const appRole = user?.app_metadata?.role;
-  const userRole = user?.user_metadata?.role;
-
   if (typeof appRole === 'string') return appRole.toLowerCase();
-  if (typeof userRole === 'string') return userRole.toLowerCase();
-
   return null;
 }
 

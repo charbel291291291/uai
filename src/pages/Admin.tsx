@@ -15,7 +15,7 @@ import { Badge } from '../components/ui/Badge';
 import { Input } from '../components/ui/Input';
 import { SEO } from '../components/SEO';
 import type { PaymentRequest } from '../types';
-import { ADMIN_ROUTES, hasAdminAccess } from '../config/admin';
+import { hasAdminAccess } from '../config/admin';
 
 interface PaymentWithUser extends PaymentRequest {
   user?: {
